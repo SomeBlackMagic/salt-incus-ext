@@ -1,0 +1,326 @@
+cases:
+  # ============================================================
+  # CASE 1: snapshot_001 - Create simple snapshot
+  # ============================================================
+  - name: snapshot_001
+    setup:
+      - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-1:
+            instance: test-container
+            name: snapshot-1
+            stateful: false
+            description: Test snapshot 1
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snapshot-1"
+        - "changes"
+      local_shell:
+        - cmd: incus info test-container
+          expect_stdout:
+            - "snapshot-1"
+    cleanup:
+      - incus delete test-container/snapshot-1
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 2: snapshot_002 - Create stateful snapshot with management
+  # ============================================================
+  - name: snapshot_002
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus init --empty test-vm --vm -c migration.stateful=true -c limits.memory=512MiB
+      - incus config device override test-vm root size.state=1GiB
+      - incus start test-vm
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-2:
+            instance: test-vm
+            stateful: true
+            description: Test snapshot 2
+            managed: true
+            pattern: daily-*
+            keep: 7
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-2"
+        - "daily-001"
+        - "changes"
+      local_shell:
+        - cmd: incus info test-vm
+          expect_stdout:
+            - "daily-001"
+    cleanup:
+      - incus delete test-vm/daily-001
+      - incus delete --force test-vm
+
+  # ============================================================
+  # CASE 3: snapshot_003 - Delete snapshot with management
+  # ============================================================
+  - name: snapshot_003
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus init --empty test-vm --vm
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-3:
+            instance: test-vm
+            name: weekly-001
+            stateful: false
+            description: Test snapshot 3
+            ensure: absent
+            managed: true
+            pattern: weekly-*
+            keep: 4
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-3"
+        - "changes"
+    cleanup:
+      - incus delete test-vm/weekly-001
+      - incus delete test-vm
+  # ============================================================
+  # CASE 4: snapshot_004 - Delete simple snapshot
+  # ============================================================
+  - name: snapshot_004
+    setup:
+      - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-4:
+            instance: test-container
+            name: monthly-001
+            stateful: false
+            description: Test snapshot 4
+            ensure: absent
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-4"
+    cleanup:
+      - incus delete test-container/monthly-001
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 5: snapshot_005 - Restore snapshot with management
+  # ============================================================
+  - name: snapshot_005
+    setup:
+      - incus init --empty test-container
+      - incus snapshot create test-container weekly-001
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-5:
+            instance: test-container
+            name: weekly-001
+            stateful: false
+            description: Test snapshot 5
+            ensure: restored
+            managed: true
+            pattern: weekly-*
+            keep: 4
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-5"
+        - "restored"
+        - "changes"
+    cleanup:
+      - incus delete test-container/weekly-001
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 6: snapshot_006 - Restore simple snapshot
+  # ============================================================
+  - name: snapshot_006
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus init --empty test-vm --vm
+      - incus snapshot create test-vm monthly-001
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-6:
+            instance: test-vm
+            name: monthly-001
+            stateful: false
+            description: Test snapshot 6
+            ensure: restored
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-6"
+        - "restored"
+        - "changes"
+    cleanup:
+      - incus delete test-vm/monthly-001
+      - incus delete test-vm
+
+  # ============================================================
+  # CASE 7: snapshot_007 - Restore daily snapshot
+  # ============================================================
+  - name: snapshot_007
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus init --empty test-vm --vm
+      - incus snapshot create test-vm daily-001
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-7:
+            instance: test-vm
+            name: daily-001
+            stateful: false
+            description: Test snapshot 7
+            ensure: restored
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-7"
+        - "restored"
+        - "changes"
+    cleanup:
+      - incus delete test-vm/daily-001
+      - incus delete test-vm
+
+  # ============================================================
+  # CASE 8: snapshot_008 - Restore stateful snapshot
+  # ============================================================
+  - name: snapshot_008
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus init --empty test-vm --vm
+      - incus snapshot create test-vm snapshot-8
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-8:
+            instance: test-vm
+            name: snapshot-8
+            stateful: true
+            description: Test snapshot 8
+            ensure: restored
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-8"
+        - "restored"
+        - "changes"
+    cleanup:
+      - incus delete test-vm/snapshot-8
+      - incus delete test-vm
+  # ============================================================
+  # CASE 9: snapshot_009 - Create monthly snapshot with management
+  # ============================================================
+  - name: snapshot_009
+    setup:
+        - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-9:
+            instance: test-container
+            name: monthly-001
+            stateful: false
+            description: Test snapshot 9
+            managed: true
+            pattern: monthly-*
+            keep: 12
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-9"
+        - "monthly-001"
+        - "changes"
+    cleanup:
+      - incus delete test-container/monthly-001
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 10: snapshot_010 - Delete daily snapshot
+  # ============================================================
+  - name: snapshot_010
+    setup:
+      - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-10:
+            instance: test-container
+            name: daily-001
+            stateful: false
+            description: Test snapshot 10
+            ensure: absent
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-10"
+    cleanup:
+      - incus delete test-container/daily-001
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 11: snapshot_011 - Create weekly snapshot
+  # ============================================================
+  - name: snapshot_011
+    setup:
+      - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-11:
+            instance: test-container
+            name: weekly-001
+            stateful: false
+            description: Test snapshot 11
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-11"
+        - "weekly-001"
+        - "changes"
+    cleanup:
+      - incus delete test-container/weekly-001
+      - incus delete test-container
+
+  # ============================================================
+  # CASE 12: snapshot_012 - Delete simple snapshot
+  # ============================================================
+  - name: snapshot_012
+    setup:
+        - incus init --empty test-container
+    pillars:
+      incus:
+        instance_snapshots:
+          snap-12:
+            instance: test-container
+            name: snapshot-12
+            stateful: false
+            description: Test snapshot 12
+            ensure: absent
+    command: state.apply instance-snapshots
+    expected:
+      salt_output_contains:
+        - "snap-12"
+    cleanup:
+      - incus delete test-container/snapshot-12
+      - incus delete test-container

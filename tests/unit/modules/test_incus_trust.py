@@ -33,18 +33,14 @@ def test_trust_list_passes_recursion_and_returns_metadata(client):
         "success": True,
         "certificates": certificates,
     }
-    client._request.assert_called_once_with(
-        "GET", "/certificates", params={"recursion": 2}
-    )
+    client._request.assert_called_once_with("GET", "/certificates", params={"recursion": 2})
 
 
 def test_trust_list_uses_defaults(client):
     client._request.return_value = {"error_code": 0}
 
     assert incus_trust_mod.trust_list() == {"success": True, "certificates": []}
-    client._request.assert_called_once_with(
-        "GET", "/certificates", params={"recursion": 1}
-    )
+    client._request.assert_called_once_with("GET", "/certificates", params={"recursion": 1})
 
 
 @pytest.mark.parametrize(
@@ -61,9 +57,7 @@ def test_trust_list_returns_api_error(client, response, error):
 
 
 @pytest.mark.parametrize("fingerprint", [None, ""])
-def test_trust_get_rejects_missing_fingerprint_before_creating_client(
-    monkeypatch, fingerprint
-):
+def test_trust_get_rejects_missing_fingerprint_before_creating_client(monkeypatch, fingerprint):
     factory = Mock()
     monkeypatch.setattr(incus_trust_mod, "_client", factory)
 
@@ -82,9 +76,7 @@ def test_trust_get_quotes_fingerprint_and_returns_metadata(client):
         "success": True,
         "certificate": certificate,
     }
-    client._request.assert_called_once_with(
-        "GET", "/certificates/finger%20print"
-    )
+    client._request.assert_called_once_with("GET", "/certificates/finger%20print")
 
 
 def test_trust_get_defaults_to_empty_metadata(client):
@@ -113,9 +105,7 @@ def test_trust_get_returns_api_error(client, response, error):
 
 
 @pytest.mark.parametrize("cert_pem", [None, ""])
-def test_trust_add_rejects_missing_certificate_before_creating_client(
-    monkeypatch, cert_pem
-):
+def test_trust_add_rejects_missing_certificate_before_creating_client(monkeypatch, cert_pem):
     factory = Mock()
     monkeypatch.setattr(incus_trust_mod, "_client", factory)
 
@@ -182,9 +172,7 @@ def test_trust_add_returns_api_error(client, response, error):
 
 
 @pytest.mark.parametrize("fingerprint", [None, ""])
-def test_trust_remove_rejects_missing_fingerprint_before_creating_client(
-    monkeypatch, fingerprint
-):
+def test_trust_remove_rejects_missing_fingerprint_before_creating_client(monkeypatch, fingerprint):
     factory = Mock()
     monkeypatch.setattr(incus_trust_mod, "_client", factory)
 
@@ -202,9 +190,7 @@ def test_trust_remove_quotes_fingerprint(client):
         "success": True,
         "message": "Certificate finger print removed from trust store",
     }
-    client._sync_request.assert_called_once_with(
-        "DELETE", "/certificates/finger%20print"
-    )
+    client._sync_request.assert_called_once_with("DELETE", "/certificates/finger%20print")
 
 
 @pytest.mark.parametrize(

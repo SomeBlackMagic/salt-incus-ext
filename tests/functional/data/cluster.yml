@@ -1,0 +1,180 @@
+cases:
+  # ============================================================
+  # CASE 1: cluster_001 - Server settings with cluster config
+  # ============================================================
+  - name: cluster_001
+    pillars:
+      incus:
+        server_settings:
+          config:
+            cluster.https_address: 192.168.1.101:8443
+            core.https_address: '[::]:8443'
+            cluster.images_minimal_replica: '3'
+        storage_pools:
+          ceph-pool:
+            driver: ceph
+            config:
+              source: incus
+              ceph.cluster_name: ceph
+    command: state.apply server_settings,storage
+    expected:
+      salt_output_contains:
+        - "cluster.https_address"
+        - "changes"
+      local_shell:
+        - cmd: incus info
+          expect_stdout:
+            - "cluster.https_address: 192.168.1.101:8443"
+            - "cluster.images_minimal_replica: \"3\""
+    cleanup:
+      - incus config unset cluster.https_address
+      - incus config unset cluster.images_minimal_replica
+      - incus storage delete ceph-pool
+
+  # ============================================================
+  # CASE 2: cluster_002 - Add cluster member
+  # ============================================================
+  - name: cluster_002
+    pillars:
+      incus:
+        cluster_members:
+          node-2:
+            address: 192.168.1.102
+            cluster_password: test-cluster-pass
+            description: Test cluster node 2
+    command: state.apply cluster
+    expected:
+      salt_output_contains:
+        - "node-2"
+        - "changes"
+    cleanup:
+      - incus cluster remove node-2 --force
+
+  # ============================================================
+  # CASE 3: cluster_003 - Server settings with OVN network
+  # ============================================================
+  - name: cluster_003
+    pillars:
+      incus:
+        server_settings:
+          config:
+            cluster.https_address: 192.168.1.103:8443
+            core.https_address: '[::]:8443'
+            cluster.images_minimal_replica: '3'
+        networks:
+          ovn-net:
+            network_type: ovn
+            config:
+              network: ovn-uplink
+              ipv4.address: 10.203.0.1/24
+              ipv4.nat: 'true'
+    command: state.apply server_settings,network
+    expected:
+      salt_output_contains:
+        - "cluster.https_address"
+        - "ovn-net"
+        - "changes"
+    cleanup:
+      - incus network delete ovn-net
+      - incus config unset cluster.https_address
+      - incus config unset cluster.images_minimal_replica
+
+  # ============================================================
+  # CASE 4: cluster_004 - Cluster member with storage and network
+  # ============================================================
+  - name: cluster_004
+    pillars:
+      incus:
+        cluster_members:
+          node-4:
+            address: 192.168.1.104
+            cluster_password: test-cluster-pass
+            description: Test cluster node 4
+        storage_pools:
+          ceph-pool:
+            driver: ceph
+            config:
+              source: incus
+              ceph.cluster_name: ceph
+        networks:
+          ovn-net:
+            network_type: ovn
+            config:
+              network: ovn-uplink
+              ipv4.address: 10.204.0.1/24
+              ipv4.nat: 'true'
+    command: state.apply cluster,storage,network
+    expected:
+      salt_output_contains:
+        - "node-4"
+        - "ceph-pool"
+        - "ovn-net"
+        - "changes"
+    cleanup:
+      - incus network delete ovn-net
+      - incus storage delete ceph-pool
+      - incus cluster remove node-4 --force
+
+  # ============================================================
+  # CASE 5: cluster_005 - Cluster member with OVN network
+  # ============================================================
+  - name: cluster_005
+    pillars:
+      incus:
+        cluster_members:
+          node-5:
+            address: 192.168.1.105
+            cluster_password: test-cluster-pass
+            description: Test cluster node 5
+        networks:
+          ovn-net:
+            network_type: ovn
+            config:
+              network: ovn-uplink
+              ipv4.address: 10.205.0.1/24
+              ipv4.nat: 'true'
+    command: state.apply cluster,network
+    expected:
+      salt_output_contains:
+        - "node-5"
+        - "ovn-net"
+        - "changes"
+    cleanup:
+      - incus network delete ovn-net
+      - incus cluster remove node-5 --force
+
+  # ============================================================
+  # CASE 6: cluster_006 - Full cluster setup
+  # ============================================================
+  - name: cluster_006
+    pillars:
+      incus:
+        cluster_members:
+          node-6:
+            address: 192.168.1.106
+            cluster_password: test-cluster-pass
+            description: Test cluster node 6
+        storage_pools:
+          ceph-pool:
+            driver: ceph
+            config:
+              source: incus
+              ceph.cluster_name: ceph
+        networks:
+          ovn-net:
+            network_type: ovn
+            config:
+              network: ovn-uplink
+              ipv4.address: 10.206.0.1/24
+              ipv4.nat: 'true'
+    command: state.apply cluster,storage,network
+    expected:
+      salt_output_contains:
+        - "node-6"
+        - "ceph-pool"
+        - "ovn-net"
+        - "changes"
+    cleanup:
+      - incus network delete ovn-net
+      - incus storage delete ceph-pool
+      - incus cluster remove node-6 --force

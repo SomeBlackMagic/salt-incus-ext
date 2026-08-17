@@ -1,0 +1,164 @@
+cases:
+  # ============================================================
+  # CASE 1: install_001 - Full install with repo, stable, amd64
+  # ============================================================
+  - name: install_001
+    pillars:
+      incus:
+        enable: true
+        repo:
+          enable: true
+          channel: stable
+          debian:
+            architecture: amd64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+        version: 6.0.1
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"
+        - "changes"
+      local_shell:
+        - cmd: dpkg -l | grep incus
+          expect_stdout:
+            - "incus"
+        - cmd: incus version
+          expect_stdout:
+            - "6.0.1"
+    cleanup:
+      - apt-get remove -y incus
+
+  # ============================================================
+  # CASE 2: install_002 - Disabled, no repo, edge, arm64
+  # ============================================================
+  - name: install_002
+    pillars:
+      incus:
+        enable: false
+        repo:
+          enable: false
+          channel: edge
+          debian:
+            architecture: arm64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+        version: 6.0.1
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"
+
+  # ============================================================
+  # CASE 3: install_003 - Disabled, with repo, edge, amd64
+  # ============================================================
+  - name: install_003
+    pillars:
+      incus:
+        enable: false
+        repo:
+          enable: true
+          channel: edge
+          debian:
+            architecture: amd64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"
+
+  # ============================================================
+  # CASE 4: install_004 - Enabled, no repo, stable, arm64
+  # ============================================================
+  - name: install_004
+    pillars:
+      incus:
+        enable: true
+        repo:
+          enable: false
+          channel: stable
+          debian:
+            architecture: arm64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"
+        - "changes"
+      local_shell:
+        - cmd: dpkg -l | grep incus
+          expect_stdout:
+            - "incus"
+    cleanup:
+      - apt-get remove -y incus
+
+  # ============================================================
+  # CASE 5: install_005 - Enabled, no repo, edge, amd64
+  # ============================================================
+  - name: install_005
+    pillars:
+      incus:
+        enable: true
+        repo:
+          enable: false
+          channel: edge
+          debian:
+            architecture: amd64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"
+        - "changes"
+      local_shell:
+        - cmd: dpkg -l | grep incus
+          expect_stdout:
+            - "incus"
+    cleanup:
+      - apt-get remove -y incus
+
+  # ============================================================
+  # CASE 6: install_006 - Disabled, with repo, stable, arm64
+  # ============================================================
+  - name: install_006
+    pillars:
+      incus:
+        enable: false
+        repo:
+          enable: true
+          channel: stable
+          debian:
+            architecture: arm64
+            key_url: https://pkgs.zabbly.com/key.asc
+        pkg:
+          name: incus
+          deps:
+          - qemu-kvm
+          - lxcfs
+    command: state.apply install
+    expected:
+      salt_output_contains:
+        - "incus"

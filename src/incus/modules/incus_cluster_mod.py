@@ -16,7 +16,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Cluster Management Functions ==========
+
 
 def cluster_info():
     """
@@ -31,12 +33,12 @@ def cluster_info():
     :return: Cluster information
     """
     client = _client()
-    result = client._request('GET', '/cluster')
+    result = client._request("GET", "/cluster")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'cluster': result.get('metadata', {})}
+    return {"success": True, "cluster": result.get("metadata", {})}
 
 
 def cluster_member_list(recursion=0):
@@ -53,12 +55,12 @@ def cluster_member_list(recursion=0):
     :return: List of cluster members
     """
     client = _client()
-    result = client._request('GET', '/cluster/members', params={'recursion': recursion})
+    result = client._request("GET", "/cluster/members", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'members': result.get('metadata', [])}
+    return {"success": True, "members": result.get("metadata", [])}
 
 
 def cluster_member_add(name, address, cluster_password=None):
@@ -78,20 +80,17 @@ def cluster_member_add(name, address, cluster_password=None):
     """
     client = _client()
 
-    data = {
-        'server_name': name,
-        'server_address': address
-    }
+    data = {"server_name": name, "server_address": address}
 
     if cluster_password:
-        data['cluster_password'] = cluster_password
+        data["cluster_password"] = cluster_password
 
-    result = client._sync_request('POST', '/cluster/members', data=data)
+    result = client._sync_request("POST", "/cluster/members", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Cluster member {name} added successfully'}
+    return {"success": True, "message": f"Cluster member {name} added successfully"}
 
 
 def cluster_member_remove(name, force=False):
@@ -112,19 +111,19 @@ def cluster_member_remove(name, force=False):
 
     params = {}
     if force:
-        params['force'] = '1'
+        params["force"] = "1"
 
-    result = client._sync_request('DELETE', f'/cluster/members/{quote(name)}', params=params)
+    result = client._sync_request("DELETE", f"/cluster/members/{quote(name)}", params=params)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Cluster member {name} removed successfully'}
+    return {"success": True, "message": f"Cluster member {name} removed successfully"}
 
 
 __all__ = [
-    'cluster_info',
-    'cluster_member_list',
-    'cluster_member_add',
-    'cluster_member_remove',
+    "cluster_info",
+    "cluster_member_list",
+    "cluster_member_add",
+    "cluster_member_remove",
 ]

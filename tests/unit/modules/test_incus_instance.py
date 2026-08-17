@@ -1,4 +1,5 @@
-from unittest.mock import Mock, call
+from unittest.mock import Mock
+from unittest.mock import call
 
 import pytest
 

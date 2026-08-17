@@ -104,9 +104,7 @@ def test_profile_create_builds_complete_request(client):
 def test_profile_create_normalizes_empty_config_and_devices(client, empty_value):
     client._sync_request.return_value = {"error_code": 0}
 
-    incus_profile_mod.profile_create(
-        "profile", config=empty_value, devices=empty_value
-    )
+    incus_profile_mod.profile_create("profile", config=empty_value, devices=empty_value)
 
     client._sync_request.assert_called_once_with(
         "POST",
@@ -162,9 +160,7 @@ def test_profile_update_deep_merges_existing_and_new_devices(client, monkeypatch
     )
 
 
-def test_profile_update_preserves_unrequested_fields_and_returns_put_error(
-    client, monkeypatch
-):
+def test_profile_update_preserves_unrequested_fields_and_returns_put_error(client, monkeypatch):
     profile = {
         "config": {"limits.cpu": "2"},
         "devices": {"root": {"type": "disk"}},
@@ -186,9 +182,7 @@ def test_profile_update_preserves_unrequested_fields_and_returns_put_error(
 
 def test_profile_update_returns_get_error_without_put(client, monkeypatch):
     error = {"success": False, "error": "missing"}
-    monkeypatch.setattr(
-        incus_profile_mod, "profile_get", Mock(return_value=error)
-    )
+    monkeypatch.setattr(incus_profile_mod, "profile_get", Mock(return_value=error))
 
     assert incus_profile_mod.profile_update("missing") is error
     client._sync_request.assert_not_called()
@@ -237,9 +231,7 @@ def test_profile_copy_inherits_source_description(client, monkeypatch):
     )
 
 
-def test_profile_copy_uses_explicit_empty_description_and_source_defaults(
-    client, monkeypatch
-):
+def test_profile_copy_uses_explicit_empty_description_and_source_defaults(client, monkeypatch):
     monkeypatch.setattr(
         incus_profile_mod,
         "profile_get",
@@ -258,9 +250,7 @@ def test_profile_copy_uses_explicit_empty_description_and_source_defaults(
 
 def test_profile_copy_returns_get_error_without_post(client, monkeypatch):
     error = {"success": False, "error": "missing"}
-    monkeypatch.setattr(
-        incus_profile_mod, "profile_get", Mock(return_value=error)
-    )
+    monkeypatch.setattr(incus_profile_mod, "profile_get", Mock(return_value=error))
 
     assert incus_profile_mod.profile_copy("missing", "copy") is error
     client._sync_request.assert_not_called()

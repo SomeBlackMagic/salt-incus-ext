@@ -35,16 +35,18 @@ import os
 import socket
 import tempfile
 import time
-import ast
-from urllib.parse import quote, urljoin
+from urllib.parse import urljoin
 
 try:
     import requests
     from requests.adapters import HTTPAdapter
-    from requests.packages.urllib3.connection import HTTPConnection
-    from requests.packages.urllib3.connectionpool import HTTPConnectionPool
+    from requests.packages.urllib3.connection import HTTPConnection  # pylint: disable=import-error
+    from requests.packages.urllib3.connectionpool import (
+        HTTPConnectionPool,  # pylint: disable=import-error
+    )
+
     HAS_REQUESTS = True
-except Exception:
+except Exception:  # pylint: disable=broad-exception-caught
     HAS_REQUESTS = False
 
 log = logging.getLogger(__name__)
@@ -66,14 +68,14 @@ INCUS_SOCKET_PATH = "/var/lib/incus/unix.socket"
 
 DEFAULT_CFG = {
     "connection": {
-        "type": "unix",                  # "unix" | "https"
-        "socket": INCUS_SOCKET_PATH,     # path to unix socket
-        "url": None,                     # https URL for remote, e.g. https://incus.example.com:8443
+        "type": "unix",  # "unix" | "https"
+        "socket": INCUS_SOCKET_PATH,  # path to unix socket
+        "url": None,  # https URL for remote, e.g. https://incus.example.com:8443
         "cert_storage": {
-            "type": "local_files",       # "local_files" | "sdb"
-            "cert": None,                # local path or sdb:// URI for type=sdb
-            "key": None,                 # local path or sdb:// URI for type=sdb
-            "verify": True,              # bool/path or sdb:// URI for type=sdb
+            "type": "local_files",  # "local_files" | "sdb"
+            "cert": None,  # local path or sdb:// URI for type=sdb
+            "key": None,  # local path or sdb:// URI for type=sdb
+            "verify": True,  # bool/path or sdb:// URI for type=sdb
         },
     }
 }
@@ -82,21 +84,85 @@ DEFAULT_CFG = {
 def deep_merge(base, override):
     """
     Recursively merge override into base.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus.deep_merge base='{"a": 1}' override='{"b": 2}'
     """
     for k, v in override.items():
-        if (
-            k in base
-            and isinstance(base[k], dict)
-            and isinstance(v, dict)
-        ):
+        if k in base and isinstance(base[k], dict) and isinstance(v, dict):
             deep_merge(base[k], v)
         else:
             base[k] = v
     return base
 
+
+# ==============================================================
+# CERT STORAGE HELPERS (HTTPS)
+# ==============================================================
+
+
+def _normalize_cert_storage(conn):
+    """Extract and return the cert_storage dict from a connection config."""
+    return conn.get("cert_storage", {}) or {}
+
+
+def _resolve_cert_storage_value(cert_storage, key, default=None):
+    """
+    Return (value, from_sdb) for a cert_storage key.
+
+    If the value starts with "sdb://", it is fetched via Salt SDB and
+    from_sdb is set to True so the caller knows the content came from
+    an in-memory string (not a file path).
+    """
+    value = cert_storage.get(key, default)
+    if isinstance(value, str) and value.startswith("sdb://"):
+        resolved = __salt__["sdb.get"](value)
+        return resolved, True
+    return value, False
+
+
+def _write_temp_file(content, suffix):
+    """Write *content* to a named temporary file and return its path."""
+    fd, path = tempfile.mkstemp(suffix=suffix)
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(content)
+    except Exception:  # pylint: disable=broad-exception-caught
+        os.unlink(path)
+        raise
+    return path
+
+
+def _ensure_file_path(value, suffix, force_temp=False):
+    """
+    Return (path, is_temp).
+
+    If *force_temp* is True (value is raw content, not a path) the content
+    is written to a temporary file.  Otherwise the value is returned as-is
+    assuming it is already a filesystem path.
+    """
+    if force_temp or (isinstance(value, str) and "\n" in value):
+        return _write_temp_file(value, suffix), True
+    return value, False
+
+
+def _coerce_verify_value(value):
+    """Convert string "true"/"false" to bool; pass through other values."""
+    if isinstance(value, str):
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
+    return value
+
+
 # ==============================================================
 # UNIX SOCKET BACKEND
 # ==============================================================
+
 
 class UnixHTTPConnection(HTTPConnection):
     """
@@ -109,7 +175,9 @@ class UnixHTTPConnection(HTTPConnection):
         self.unix_socket = unix_socket
 
     def connect(self):
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock = socket.socket(  # pylint: disable=attribute-defined-outside-init
+            socket.AF_UNIX, socket.SOCK_STREAM
+        )
         self.sock.connect(self.unix_socket)
 
 
@@ -139,11 +207,13 @@ class UnixSocketPoolManager:
     def __init__(self, socket_path=INCUS_SOCKET_PATH):
         self.socket_path = socket_path
 
-    def connection_from_host(self, host, port=None, scheme="http", pool_kwargs=None):
+    def connection_from_host(
+        self, host, port=None, scheme="http", pool_kwargs=None
+    ):  # pylint: disable=unused-argument
         # host/port/scheme are ignored — we always use unix socket
         return UnixHTTPConnectionPool(self.socket_path)
 
-    def connection_from_url(self, url, pool_kwargs=None):
+    def connection_from_url(self, url, pool_kwargs=None):  # pylint: disable=unused-argument
         # url is ignored — we always use unix socket
         return UnixHTTPConnectionPool(self.socket_path)
 
@@ -157,15 +227,17 @@ class UnixHTTPAdapter(HTTPAdapter):
         self.socket_path = socket_path
         super().__init__(**kwargs)
 
-    def init_poolmanager(self, *args, **kwargs):
+    def init_poolmanager(self, *args, **kwargs):  # pylint: disable=unused-argument
         # substitute our custom PoolManager instead of the standard one
-        self.poolmanager = UnixSocketPoolManager(self.socket_path)
+        self.poolmanager = UnixSocketPoolManager(
+            self.socket_path
+        )  # pylint: disable=attribute-defined-outside-init
 
-    def proxy_manager_for(self, *args, **kwargs):
+    def proxy_manager_for(self, *args, **kwargs):  # pylint: disable=unused-argument
         # proxies are not applicable for unix socket
         return None
 
-    def request_url(self, request, proxies):
+    def request_url(self, request, proxies):  # pylint: disable=unused-argument
         # Actual transport is AF_UNIX, URL is only needed for formal HTTP
         return "http://localhost" + request.path_url
 
@@ -173,6 +245,7 @@ class UnixHTTPAdapter(HTTPAdapter):
 # ==============================================================
 # CLIENT
 # ==============================================================
+
 
 class IncusClient:
     _salt = {}  # default; overridden in __init__ when salt_funcs are provided
@@ -192,7 +265,7 @@ class IncusClient:
         if getattr(self, "session", None):
             try:
                 self.session.close()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
         for path in self._temp_files:
             try:
@@ -260,9 +333,7 @@ class IncusClient:
                 cert_path, cert_temp = _ensure_file_path(
                     cert_value, ".crt", force_temp=cert_from_sdb
                 )
-                key_path, key_temp = _ensure_file_path(
-                    key_value, ".key", force_temp=key_from_sdb
-                )
+                key_path, key_temp = _ensure_file_path(key_value, ".key", force_temp=key_from_sdb)
                 if cert_temp:
                     self._track_temp_file(cert_path)
                 if key_temp:
@@ -340,7 +411,9 @@ class IncusClient:
                     log.error("=" * 60)
                     log.error("Request URL: %s %s", method, url)
                     log.error("Request params: %s", params)
-                    log.error("Request data (JSON): %s", json.dumps(data, indent=2) if data else "None")
+                    log.error(
+                        "Request data (JSON): %s", json.dumps(data, indent=2) if data else "None"
+                    )
 
                     try:
                         error_body = e.response.json()
@@ -350,10 +423,14 @@ class IncusClient:
                         if isinstance(error_body, dict):
                             if "error" in error_body:
                                 log.error("Incus error message: %s", error_body["error"])
-                            if "metadata" in error_body and isinstance(error_body["metadata"], dict):
+                            if "metadata" in error_body and isinstance(
+                                error_body["metadata"], dict
+                            ):
                                 if "err" in error_body["metadata"]:
-                                    log.error("Incus metadata error: %s", error_body["metadata"]["err"])
-                    except Exception:
+                                    log.error(
+                                        "Incus metadata error: %s", error_body["metadata"]["err"]
+                                    )
+                    except Exception:  # pylint: disable=broad-exception-caught
                         # If response is not JSON, log raw text
                         log.error("Response body (raw): %s", e.response.text)
 
@@ -389,18 +466,12 @@ class IncusClient:
 
         # Operations must begin with /1.0/operations
         if not operation_url.startswith("/1.0/operations/"):
-            return {
-                "success": False,
-                "error": f"Invalid operation URL: {operation_url}"
-            }
+            return {"success": False, "error": f"Invalid operation URL: {operation_url}"}
 
         while True:
             # Timeout
             if time.time() - started > timeout:
-                return {
-                    "success": False,
-                    "error": "Timeout waiting for operation to finish"
-                }
+                return {"success": False, "error": "Timeout waiting for operation to finish"}
 
             # Query operation state
             result = self._sync_request("GET", operation_url.replace("/1.0/", "/"))
@@ -437,13 +508,13 @@ class IncusClient:
             return {
                 "success": False,
                 "operation": op,
-                "error": f"Unexpected status_code: {status_code}"
+                "error": f"Unexpected status_code: {status_code}",
             }
 
     def _sync_request(self, method, endpoint, data=None, params=None):
         result = self._request(method, endpoint, data=data, params=params)
 
-        if result.get('error_code', "")!= 0:
+        if result.get("error_code", "") != 0:
             return result
 
         if result.get("type") == "async":

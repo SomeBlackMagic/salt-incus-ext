@@ -14,7 +14,8 @@ import os
 
 try:
     from cryptography import x509
-    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.x509.oid import NameOID
 
@@ -52,9 +53,7 @@ def _normalize_storage(storage=None):
     if storage is None:
         api_client_cfg = _api_client_cfg()
         storage = (
-            api_client_cfg.get("generate_storage")
-            or api_client_cfg.get("import_storage")
-            or {}
+            api_client_cfg.get("generate_storage") or api_client_cfg.get("import_storage") or {}
         )
     elif isinstance(storage, str):
         # Salt may pass inline JSON mapping as string from Jinja/YAML rendering.
@@ -84,8 +83,8 @@ def _normalize_generate(cn=None, days=None):
 
     try:
         cert_days = int(cert_days)
-    except (TypeError, ValueError):
-        raise ValueError("days must be an integer")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("days must be an integer") from exc
 
     if cert_days <= 0:
         raise ValueError("days must be greater than 0")
@@ -103,7 +102,7 @@ def _storage_read(storage, key):
         except TypeError:
             # Backward compatibility with older Salt versions.
             value = __salt__["sdb.get"](target)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(f"Failed to read SDB URI '{target}': {exc}") from exc
 
         if value == target:
@@ -115,7 +114,7 @@ def _storage_read(storage, key):
         return __salt__["cp.get_file_str"](target) or None
     if not os.path.exists(target):
         return None
-    with open(target, "r", encoding="utf-8") as fp:
+    with open(target, encoding="utf-8") as fp:
         return fp.read()
 
 
@@ -180,7 +179,7 @@ def _validate_cert_pem(cert_pem, source):
         raise ValueError(f"Certificate from {source} is not a PEM certificate")
     try:
         x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         raise ValueError(f"Invalid certificate PEM in {source}: {exc}") from exc
 
 
@@ -191,13 +190,20 @@ def _validate_private_key_pem(key_pem, source):
         raise ValueError(f"Private key from {source} is not a PEM private key")
     try:
         serialization.load_pem_private_key(key_pem.encode("utf-8"), password=None)
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         raise ValueError(f"Invalid private key PEM in {source}: {exc}") from exc
 
 
 def cert_get(storage=None):
     """
     Read certificate from configured storage.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus_pki.cert_get
+        salt '*' incus_pki.cert_get storage='{"cert": "/etc/salt/pki/incus/client.crt", "key": "/etc/salt/pki/incus/client.key"}'
     """
     try:
         normalized_storage = _normalize_storage(storage)
@@ -216,7 +222,7 @@ def cert_get(storage=None):
             "comment": "Certificate loaded from storage",
             "cert": cert_pem,
         }
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         log.error("Failed to read certificate from storage: %s", exc)
         return {
             "success": False,
@@ -229,6 +235,13 @@ def cert_get(storage=None):
 def key_get(storage=None):
     """
     Read private key from configured storage.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus_pki.key_get
+        salt '*' incus_pki.key_get storage='{"cert": "/etc/salt/pki/incus/client.crt", "key": "/etc/salt/pki/incus/client.key"}'
     """
     try:
         normalized_storage = _normalize_storage(storage)
@@ -247,7 +260,7 @@ def key_get(storage=None):
             "comment": "Private key loaded from storage",
             "key": key_pem,
         }
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         log.error("Failed to read private key from storage: %s", exc)
         return {
             "success": False,
@@ -260,6 +273,13 @@ def key_get(storage=None):
 def cert_fingerprint(cert_pem=None, storage=None):
     """
     Calculate SHA-256 fingerprint from certificate PEM.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus_pki.cert_fingerprint
+        salt '*' incus_pki.cert_fingerprint storage='{"cert": "/etc/salt/pki/incus/client.crt", "key": "/etc/salt/pki/incus/client.key"}'
     """
     try:
         cert_value = cert_pem
@@ -276,7 +296,7 @@ def cert_fingerprint(cert_pem=None, storage=None):
             "comment": "Certificate fingerprint calculated",
             "fingerprint": fingerprint,
         }
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         log.error("Failed to calculate certificate fingerprint: %s", exc)
         return {
             "success": False,
@@ -289,6 +309,14 @@ def cert_fingerprint(cert_pem=None, storage=None):
 def generate_keypair(cn=None, days=None, storage=None, force=False):
     """
     Generate an EC P-384 client keypair and save it to storage.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus_pki.generate_keypair
+        salt '*' incus_pki.generate_keypair cn=salt-master days=3650
+        salt '*' incus_pki.generate_keypair storage='{"cert": "/etc/salt/pki/incus/client.crt", "key": "/etc/salt/pki/incus/client.key"}' force=True
     """
     try:
         normalized_storage = _normalize_storage(storage)
@@ -316,7 +344,7 @@ def generate_keypair(cn=None, days=None, storage=None, force=False):
             "comment": "TLS keypair generated and stored",
             "fingerprint": fingerprint,
         }
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         log.error("Failed to generate TLS keypair: %s", exc)
         return {
             "success": False,

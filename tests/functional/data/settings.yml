@@ -1,0 +1,217 @@
+cases:
+  # ============================================================
+  # CASE 1: settings_001 - Full configuration
+  # ============================================================
+  - name: settings_001
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '6'
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "server_settings"
+        - "changes"
+      local_shell:
+        - cmd: incus config show
+          expect_stdout:
+            - "core.https_address: '[::]:8443"
+            - "images.compression_algorithm: zstd"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+      - incus config unset images.compression_algorithm
+
+  # ============================================================
+  # CASE 2: settings_002 - Only compression
+  # ============================================================
+  - name: settings_002
+    pillars:
+      incus:
+        server_settings:
+          config:
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "images.compression_algorithm"
+        - "changes"
+      local_shell:
+        - cmd: incus config show
+          expect_stdout:
+            - "images.compression_algorithm: zstd"
+    cleanup:
+      - incus config unset images.compression_algorithm
+
+  # ============================================================
+  # CASE 3: settings_003 - Password and compression zstd
+  # ============================================================
+  - name: settings_003
+    pillars:
+      incus:
+        server_settings:
+          config:
+            images.auto_update_cached: 'true'
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "images.auto_update_cached"
+        - "images.compression_algorithm"
+        - "changes"
+    cleanup:
+      - incus config unset images.auto_update_cached
+      - incus config unset images.compression_algorithm
+
+  # ============================================================
+  # CASE 4: settings_004 - HTTPS and auto-update 24h
+  # ============================================================
+  - name: settings_004
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '24'
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "core.https_address"
+        - "images.auto_update_interval"
+        - "changes"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+
+  # ============================================================
+  # CASE 5: settings_005 - HTTPS and compression zstd
+  # ============================================================
+  - name: settings_005
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "core.https_address"
+        - "images.compression_algorithm"
+        - "changes"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.compression_algorithm
+
+  # ============================================================
+  # CASE 6: settings_006 - Password and auto-update 12h
+  # ============================================================
+  - name: settings_006
+    pillars:
+      incus:
+        server_settings:
+          config:
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '12'
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "images.auto_update_cached"
+        - "images.auto_update_interval"
+        - "changes"
+    cleanup:
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+
+  # ============================================================
+  # CASE 7: settings_007 - Password and auto-update 6h
+  # ============================================================
+  - name: settings_007
+    pillars:
+      incus:
+        server_settings:
+          config:
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '6'
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "images.auto_update_cached"
+        - "images.auto_update_interval"
+        - "changes"
+    cleanup:
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+
+  # ============================================================
+  # CASE 8: settings_008 - Full with zstd and 12h
+  # ============================================================
+  - name: settings_008
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '12'
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "server_settings"
+        - "changes"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+      - incus config unset images.compression_algorithm
+
+  # ============================================================
+  # CASE 9: settings_009 - HTTPS and password only
+  # ============================================================
+  - name: settings_009
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.auto_update_cached: 'true'
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "core.https_address"
+        - "images.auto_update_cached"
+        - "changes"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.auto_update_cached
+
+  # ============================================================
+  # CASE 10: settings_010 - Full with gzip and 24h
+  # ============================================================
+  - name: settings_010
+    pillars:
+      incus:
+        server_settings:
+          config:
+            core.https_address: '[::]:8443'
+            images.auto_update_cached: 'true'
+            images.auto_update_interval: '24'
+            images.compression_algorithm: zstd
+    command: state.apply settings
+    expected:
+      salt_output_contains:
+        - "server_settings"
+        - "changes"
+    cleanup:
+      - incus config unset core.https_address
+      - incus config unset images.auto_update_cached
+      - incus config unset images.auto_update_interval
+      - incus config unset images.compression_algorithm

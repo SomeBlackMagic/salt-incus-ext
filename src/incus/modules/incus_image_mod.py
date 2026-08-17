@@ -11,6 +11,7 @@ def __virtual__():
 
     return incus_mod.__virtual__()
 
+
 log = logging.getLogger(__name__)
 
 
@@ -19,7 +20,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Image Management Functions ==========
+
 
 def image_list(recursion=0):
     """
@@ -33,12 +36,12 @@ def image_list(recursion=0):
         salt '*' incus.image_list recursion=1
     """
     client = _client()
-    result = client._request('GET', '/images', params={'recursion': recursion})
+    result = client._request("GET", "/images", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'images': result.get('metadata', [])}
+    return {"success": True, "images": result.get("metadata", [])}
 
 
 def image_get(fingerprint):
@@ -52,12 +55,12 @@ def image_get(fingerprint):
         salt '*' incus.image_get <fingerprint>
     """
     client = _client()
-    result = client._request('GET', f'/images/{quote(fingerprint)}')
+    result = client._request("GET", f"/images/{quote(fingerprint)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'image': result.get('metadata', {})}
+    return {"success": True, "image": result.get("metadata", {})}
 
 
 def image_delete(fingerprint):
@@ -71,15 +74,21 @@ def image_delete(fingerprint):
         salt '*' incus.image_delete <fingerprint>
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/images/{quote(fingerprint)}')
+    result = client._sync_request("DELETE", f"/images/{quote(fingerprint)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Image {fingerprint} deleted successfully'}
+    return {"success": True, "message": f"Image {fingerprint} deleted successfully"}
 
 
-def image_create_from_file(filename, public=False, properties=None, auto_update=False, aliases=None):
+def image_create_from_file(
+    filename,
+    public=False,
+    properties=None,
+    auto_update=False,  # pylint: disable=unused-argument
+    aliases=None,
+):
     """
     Upload a local .tar.xz/.tar.gz or qcow2 as an image.
 
@@ -98,52 +107,49 @@ def image_create_from_file(filename, public=False, properties=None, auto_update=
     url = client.base_url + "/images"
 
     try:
-        with open(filename, 'rb') as f:
-            files = {'file': f}
+        with open(filename, "rb") as f:
+            files = {"file": f}
 
             headers_data = {
-                'X-Incus-public': '1' if public else '0',
+                "X-Incus-public": "1" if public else "0",
             }
 
             if properties:
                 for key, value in properties.items():
-                    headers_data[f'X-Incus-properties.{key}'] = str(value)
+                    headers_data[f"X-Incus-properties.{key}"] = str(value)
 
             response = client.session.post(url, files=files, headers=headers_data, timeout=600)
             response.raise_for_status()
             result = response.json()
     except FileNotFoundError:
-        return {'success': False, 'error': f'File not found: {filename}'}
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
+        return {"success": False, "error": f"File not found: {filename}"}
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        return {"success": False, "error": str(e)}
 
-    if result.get('type') == 'async':
-        op_result = client._wait_for_operation(result['operation'])
+    if result.get("type") == "async":
+        op_result = client._wait_for_operation(result["operation"])
 
         # Check for errors
         if op_result.get("error_code") != 0:
-            return {'success': False, 'error': op_result.get('error', 'Unknown error')}
+            return {"success": False, "error": op_result.get("error", "Unknown error")}
 
         metadata = op_result.get("metadata", {})
         if isinstance(metadata, dict) and "metadata" in metadata:
             metadata = metadata.get("metadata", {})
 
-        fingerprint = metadata.get('fingerprint')
+        fingerprint = metadata.get("fingerprint")
 
         # Add aliases if specified
         if aliases and fingerprint:
             for alias_name in aliases:
-                alias_data = {
-                    'name': alias_name,
-                    'target': fingerprint
-                }
-                alias_result = client._sync_request('POST', '/images/aliases', data=alias_data)
-                if alias_result.get('error_code') != 0:
+                alias_data = {"name": alias_name, "target": fingerprint}
+                alias_result = client._sync_request("POST", "/images/aliases", data=alias_data)
+                if alias_result.get("error_code") != 0:
                     log.warning(f"Failed to add alias {alias_name}: {alias_result.get('error')}")
 
-        return {'success': True, 'fingerprint': fingerprint, 'metadata': metadata}
+        return {"success": True, "fingerprint": fingerprint, "metadata": metadata}
 
-    return {'success': True, 'metadata': result.get('metadata', {})}
+    return {"success": True, "metadata": result.get("metadata", {})}
 
 
 def image_create_from_remote(
@@ -169,19 +175,17 @@ def image_create_from_remote(
     """
     Create an image by pulling from a remote server.
 
-    Example:
-        salt '*' incus.image_create_from_remote images: ubuntu/22.04
-
-        Fully matches Incus/LXD REST API:
-      POST /1.0/images
-
-    API reference:
-      https://linuxcontainers.org/incus/docs/main/rest-api/#post-10images
-
-    Only the "source" part is mandatory.
-
+    Fully matches Incus REST API POST /1.0/images.
+    Only the ``server`` and one of ``alias`` or ``fingerprint`` are mandatory.
     All other fields are optional and will be included only if specified.
-    The result is ALWAYS an async operation.
+    The result is always an async operation.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus.image_create_from_remote https://images.linuxcontainers.org alias=ubuntu/22.04
+        salt '*' incus.image_create_from_remote https://images.linuxcontainers.org alias=ubuntu/22.04 protocol=simplestreams
     """
 
     # ============
@@ -190,37 +194,28 @@ def image_create_from_remote(
 
     # Mandatory: server
     if not server or not isinstance(server, str):
-        return {
-            "success": False,
-            "error": "Parameter 'server' is required and must be a string"
-        }
+        return {"success": False, "error": "Parameter 'server' is required and must be a string"}
 
     # Mandatory: alias XOR fingerprint
     if not alias and not fingerprint:
-        return {
-            "success": False,
-            "error": "Either 'alias' or 'fingerprint' must be provided"
-        }
+        return {"success": False, "error": "Either 'alias' or 'fingerprint' must be provided"}
 
     if alias and fingerprint:
-        return {
-            "success": False,
-            "error": "Only one of 'alias' or 'fingerprint' may be provided"
-        }
+        return {"success": False, "error": "Only one of 'alias' or 'fingerprint' may be provided"}
 
     # Mandatory protocol
-    VALID_PROTOCOLS = ("simplestreams", "incus", "lxd", "direct")
-    if protocol not in VALID_PROTOCOLS:
+    valid_protocols = ("simplestreams", "incus", "lxd", "direct")
+    if protocol not in valid_protocols:
         return {
             "success": False,
-            "error": f"Invalid protocol '{protocol}'. Must be one of {VALID_PROTOCOLS}"
+            "error": f"Invalid protocol '{protocol}'. Must be one of {valid_protocols}",
         }
 
     # Optional: type for source (Incus allows "instance", "image")
     if image_type and image_type not in ("container", "virtual-machine", "instance", "image"):
         return {
             "success": False,
-            "error": "Invalid image_type. Valid: container, virtual-machine, instance, image"
+            "error": "Invalid image_type. Valid: container, virtual-machine, instance, image",
         }
 
     # ============
@@ -238,7 +233,7 @@ def image_create_from_remote(
             "mode": "pull",
             "server": server,
             "protocol": protocol,
-        }
+        },
     }
 
     # Optional source fields
@@ -290,29 +285,24 @@ def image_create_from_remote(
     if isinstance(metadata, dict) and "metadata" in metadata:
         metadata = metadata.get("metadata", {})
 
-    fingerprint = metadata.get('fingerprint')
+    fingerprint = metadata.get("fingerprint")
 
     # Add aliases after image is created
     if aliases and fingerprint:
         for alias_name in aliases:
-            alias_data = {
-                'name': alias_name,
-                'target': fingerprint
-            }
-            alias_result = client._sync_request('POST', '/images/aliases', data=alias_data)
-            if alias_result.get('error_code') != 0:
+            alias_data = {"name": alias_name, "target": fingerprint}
+            alias_result = client._sync_request("POST", "/images/aliases", data=alias_data)
+            if alias_result.get("error_code") != 0:
                 log.warning(f"Failed to add alias {alias_name}: {alias_result.get('error')}")
 
     # Add profiles if specified (via image update)
     if profiles and fingerprint:
-        update_data = {
-            'profiles': profiles
-        }
+        update_data = {"profiles": profiles}
         update_result = image_update(fingerprint, update_data)
-        if not update_result.get('success'):
+        if not update_result.get("success"):
             log.warning(f"Failed to set profiles on image: {update_result.get('error')}")
 
-    return {'success': True, 'fingerprint': fingerprint, 'metadata': metadata}
+    return {"success": True, "fingerprint": fingerprint, "metadata": metadata}
 
 
 def image_update_properties(fingerprint, properties):
@@ -327,20 +317,20 @@ def image_update_properties(fingerprint, properties):
     """
     client = _client()
 
-    current = client._request('GET', f'/images/{quote(fingerprint)}')
-    if 'error' in current:
-        return {'success': False, 'error': current['error']}
+    current = client._request("GET", f"/images/{quote(fingerprint)}")
+    if "error" in current:
+        return {"success": False, "error": current["error"]}
 
-    data = current.get('metadata', {})
-    data['properties'] = data.get('properties', {})
-    data['properties'].update(properties)
+    data = current.get("metadata", {})
+    data["properties"] = data.get("properties", {})
+    data["properties"].update(properties)
 
-    result = client._sync_request('PUT', f'/images/{quote(fingerprint)}', data=data)
+    result = client._sync_request("PUT", f"/images/{quote(fingerprint)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Image {fingerprint} updated successfully'}
+    return {"success": True, "message": f"Image {fingerprint} updated successfully"}
 
 
 def image_update(fingerprint, update_body):
@@ -361,16 +351,16 @@ def image_update(fingerprint, update_body):
     client = _client()
 
     # Get current image data
-    current = client._request('GET', f'/images/{quote(fingerprint)}')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get image')}
+    current = client._request("GET", f"/images/{quote(fingerprint)}")
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get image")}
 
-    data = current.get('metadata', {})
+    data = current.get("metadata", {})
 
     # Handle aliases separately via /images/aliases API
     # Make a copy to avoid modifying the original
     update_body_copy = dict(update_body)
-    desired_aliases = update_body_copy.pop('aliases', None)
+    desired_aliases = update_body_copy.pop("aliases", None)
 
     # Update other fields
     for key, value in update_body_copy.items():
@@ -378,23 +368,23 @@ def image_update(fingerprint, update_body):
 
     # Send PUT request for other fields (if any)
     if update_body_copy:
-        result = client._sync_request('PUT', f'/images/{quote(fingerprint)}', data=data)
+        result = client._sync_request("PUT", f"/images/{quote(fingerprint)}", data=data)
 
-        if result.get('error_code') != 0:
-            return {'success': False, 'error': result.get('error', 'Failed to update image')}
+        if result.get("error_code") != 0:
+            return {"success": False, "error": result.get("error", "Failed to update image")}
 
     # Handle aliases separately using /images/aliases API
     if desired_aliases is not None:
         # Get current aliases from the API (not from image metadata)
-        all_aliases_result = client._request('GET', '/images/aliases', params={'recursion': 1})
-        if all_aliases_result.get('error_code') != 0:
-            return {'success': False, 'error': 'Failed to get current aliases'}
+        all_aliases_result = client._request("GET", "/images/aliases", params={"recursion": 1})
+        if all_aliases_result.get("error_code") != 0:
+            return {"success": False, "error": "Failed to get current aliases"}
 
         # Filter aliases for this image
         current_aliases = []
-        for alias_obj in all_aliases_result.get('metadata', []):
-            if isinstance(alias_obj, dict) and alias_obj.get('target') == fingerprint:
-                alias_name = alias_obj.get('name')
+        for alias_obj in all_aliases_result.get("metadata", []):
+            if isinstance(alias_obj, dict) and alias_obj.get("target") == fingerprint:
+                alias_name = alias_obj.get("name")
                 if alias_name:
                     current_aliases.append(alias_name)
 
@@ -404,21 +394,21 @@ def image_update(fingerprint, update_body):
 
         # Remove old aliases
         for alias_name in to_remove:
-            del_result = client._sync_request('DELETE', f'/images/aliases/{quote(alias_name)}')
-            if del_result.get('error_code') != 0:
+            del_result = client._sync_request("DELETE", f"/images/aliases/{quote(alias_name)}")
+            if del_result.get("error_code") != 0:
                 log.warning(f"Failed to delete alias {alias_name}: {del_result.get('error')}")
 
         # Add new aliases
         for alias_name in to_add:
-            alias_data = {
-                'name': alias_name,
-                'target': fingerprint
-            }
-            add_result = client._sync_request('POST', '/images/aliases', data=alias_data)
-            if add_result.get('error_code') != 0:
-                return {'success': False, 'error': f"Failed to add alias {alias_name}: {add_result.get('error')}"}
+            alias_data = {"name": alias_name, "target": fingerprint}
+            add_result = client._sync_request("POST", "/images/aliases", data=alias_data)
+            if add_result.get("error_code") != 0:
+                return {
+                    "success": False,
+                    "error": f"Failed to add alias {alias_name}: {add_result.get('error')}",
+                }
 
-    return {'success': True, 'message': f'Image {fingerprint} updated successfully'}
+    return {"success": True, "message": f"Image {fingerprint} updated successfully"}
 
 
 def image_set_public(fingerprint, public=True):
@@ -433,21 +423,21 @@ def image_set_public(fingerprint, public=True):
     """
     client = _client()
 
-    current = client._request('GET', f'/images/{quote(fingerprint)}')
-    if 'error' in current:
-        return {'success': False, 'error': current['error']}
+    current = client._request("GET", f"/images/{quote(fingerprint)}")
+    if "error" in current:
+        return {"success": False, "error": current["error"]}
 
-    data = current.get('metadata', {})
-    data['public'] = public
+    data = current.get("metadata", {})
+    data["public"] = public
 
-    result = client._sync_request('PUT', f'/images/{quote(fingerprint)}', data=data)
+    result = client._sync_request("PUT", f"/images/{quote(fingerprint)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
     return {
-        'success': True,
-        'message': f'Image {fingerprint} set to {"public" if public else "private"}'
+        "success": True,
+        "message": f'Image {fingerprint} set to {"public" if public else "private"}',
     }
 
 
@@ -463,12 +453,12 @@ def image_alias_list(recursion=0):
         salt '*' incus.image_alias_list recursion=1
     """
     client = _client()
-    result = client._request('GET', '/images/aliases', params={'recursion': recursion})
+    result = client._request("GET", "/images/aliases", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'aliases': result.get('metadata', [])}
+    return {"success": True, "aliases": result.get("metadata", [])}
 
 
 def image_alias_get(name):
@@ -482,18 +472,18 @@ def image_alias_get(name):
         salt '*' incus.image_alias_get ubuntu/22.04
     """
     if not name:
-        return {'success': False, 'error': 'Alias name is required'}
+        return {"success": False, "error": "Alias name is required"}
 
     client = _client()
-    result = client._request('GET', f'/images/aliases/{quote(str(name))}')
+    result = client._request("GET", f"/images/aliases/{quote(str(name))}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to get alias')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to get alias")}
 
-    return {'success': True, 'alias': result.get('metadata', {})}
+    return {"success": True, "alias": result.get("metadata", {})}
 
 
-def image_alias_create(name, target, description=''):
+def image_alias_create(name, target, description=""):
     """
     Create an image alias
 
@@ -505,26 +495,23 @@ def image_alias_create(name, target, description=''):
         salt '*' incus.image_alias_create ubuntu/custom abc123def description="Custom Ubuntu image"
     """
     if not name:
-        return {'success': False, 'error': 'Alias name is required'}
+        return {"success": False, "error": "Alias name is required"}
     if not target:
-        return {'success': False, 'error': 'Target fingerprint is required'}
+        return {"success": False, "error": "Target fingerprint is required"}
 
     client = _client()
 
-    data = {
-        'name': name,
-        'target': target
-    }
+    data = {"name": name, "target": target}
 
     if description:
-        data['description'] = description
+        data["description"] = description
 
-    result = client._sync_request('POST', '/images/aliases', data=data)
+    result = client._sync_request("POST", "/images/aliases", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to create alias')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to create alias")}
 
-    return {'success': True, 'message': f'Image alias {name} created successfully'}
+    return {"success": True, "message": f"Image alias {name} created successfully"}
 
 
 def image_alias_update(name, target=None, description=None):
@@ -539,30 +526,30 @@ def image_alias_update(name, target=None, description=None):
         salt '*' incus.image_alias_update myimage description="Updated description"
     """
     if not name:
-        return {'success': False, 'error': 'Alias name is required'}
+        return {"success": False, "error": "Alias name is required"}
 
     client = _client()
 
     # Get current alias
-    current = client._request('GET', f'/images/aliases/{quote(name)}')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get alias')}
+    current = client._request("GET", f"/images/aliases/{quote(name)}")
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get alias")}
 
-    alias_data = current.get('metadata', {})
+    alias_data = current.get("metadata", {})
 
     # Update fields
     if target is not None:
-        alias_data['target'] = target
+        alias_data["target"] = target
 
     if description is not None:
-        alias_data['description'] = description
+        alias_data["description"] = description
 
-    result = client._sync_request('PUT', f'/images/aliases/{quote(name)}', data=alias_data)
+    result = client._sync_request("PUT", f"/images/aliases/{quote(name)}", data=alias_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to update alias')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to update alias")}
 
-    return {'success': True, 'message': f'Image alias {name} updated successfully'}
+    return {"success": True, "message": f"Image alias {name} updated successfully"}
 
 
 def image_alias_rename(name, new_name):
@@ -576,20 +563,18 @@ def image_alias_rename(name, new_name):
         salt '*' incus.image_alias_rename oldname newname
     """
     if not name or not new_name:
-        return {'success': False, 'error': 'Both old and new alias names are required'}
+        return {"success": False, "error": "Both old and new alias names are required"}
 
     client = _client()
 
-    data = {
-        'name': new_name
-    }
+    data = {"name": new_name}
 
-    result = client._sync_request('POST', f'/images/aliases/{quote(name)}', data=data)
+    result = client._sync_request("POST", f"/images/aliases/{quote(name)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to rename alias')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to rename alias")}
 
-    return {'success': True, 'message': f'Image alias {name} renamed to {new_name} successfully'}
+    return {"success": True, "message": f"Image alias {name} renamed to {new_name} successfully"}
 
 
 def image_alias_delete(name):
@@ -603,18 +588,26 @@ def image_alias_delete(name):
         salt '*' incus.image_alias_delete ubuntu/22.04
     """
     if not name:
-        return {'success': False, 'error': 'Alias name is required'}
+        return {"success": False, "error": "Alias name is required"}
 
     client = _client()
-    result = client._sync_request('DELETE', f'/images/aliases/{quote(name)}')
+    result = client._sync_request("DELETE", f"/images/aliases/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to delete alias')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to delete alias")}
 
-    return {'success': True, 'message': f'Image alias {name} deleted successfully'}
+    return {"success": True, "message": f"Image alias {name} deleted successfully"}
 
 
-def image_copy(fingerprint, target_server=None, target_certificate=None, target_secret=None, aliases=None, public=False, auto_update=False):
+def image_copy(
+    fingerprint,
+    target_server=None,
+    target_certificate=None,
+    target_secret=None,
+    aliases=None,
+    public=False,
+    auto_update=False,
+):
     """
     Copy an image to another server or within the same server
 
@@ -626,59 +619,57 @@ def image_copy(fingerprint, target_server=None, target_certificate=None, target_
         salt '*' incus.image_copy <fingerprint> target_server=https://target:8443 aliases="['remote-copy']"
     """
     if not fingerprint:
-        return {'success': False, 'error': 'Fingerprint is required'}
+        return {"success": False, "error": "Fingerprint is required"}
 
     client = _client()
 
     # Get source image
-    source_result = client._request('GET', f'/images/{quote(fingerprint)}')
-    if source_result.get('error_code') != 0:
-        return {'success': False, 'error': source_result.get('error', 'Failed to get source image')}
+    source_result = client._request("GET", f"/images/{quote(fingerprint)}")
+    if source_result.get("error_code") != 0:
+        return {"success": False, "error": source_result.get("error", "Failed to get source image")}
 
-    source_image = source_result.get('metadata', {})
+    _source_image = source_result.get("metadata", {})
 
     data = {
-        'source': {
-            'type': 'copy',
-            'fingerprint': fingerprint
-        },
-        'public': public,
-        'auto_update': auto_update
+        "source": {"type": "copy", "fingerprint": fingerprint},
+        "public": public,
+        "auto_update": auto_update,
     }
 
     if target_server:
-        data['source']['server'] = target_server
-        data['source']['mode'] = 'pull'
-        data['source']['protocol'] = 'incus'
+        data["source"]["server"] = target_server
+        data["source"]["mode"] = "pull"
+        data["source"]["protocol"] = "incus"
 
         if target_certificate:
-            data['source']['certificate'] = target_certificate
+            data["source"]["certificate"] = target_certificate
         if target_secret:
-            data['source']['secret'] = target_secret
+            data["source"]["secret"] = target_secret
 
-    result = client._sync_request('POST', '/images', data=data)
+    result = client._sync_request("POST", "/images", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to copy image')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to copy image")}
 
-    metadata = result.get('metadata', {})
-    if isinstance(metadata, dict) and 'metadata' in metadata:
-        metadata = metadata.get('metadata', {})
+    metadata = result.get("metadata", {})
+    if isinstance(metadata, dict) and "metadata" in metadata:
+        metadata = metadata.get("metadata", {})
 
-    new_fingerprint = metadata.get('fingerprint', fingerprint)
+    new_fingerprint = metadata.get("fingerprint", fingerprint)
 
     # Add aliases to the new image
     if aliases and new_fingerprint:
         for alias_name in aliases:
-            alias_data = {
-                'name': alias_name,
-                'target': new_fingerprint
-            }
-            alias_result = client._sync_request('POST', '/images/aliases', data=alias_data)
-            if alias_result.get('error_code') != 0:
+            alias_data = {"name": alias_name, "target": new_fingerprint}
+            alias_result = client._sync_request("POST", "/images/aliases", data=alias_data)
+            if alias_result.get("error_code") != 0:
                 log.warning(f"Failed to add alias {alias_name}: {alias_result.get('error')}")
 
-    return {'success': True, 'fingerprint': new_fingerprint, 'message': f'Image {fingerprint} copied successfully'}
+    return {
+        "success": True,
+        "fingerprint": new_fingerprint,
+        "message": f"Image {fingerprint} copied successfully",
+    }
 
 
 def image_export(fingerprint, target_path=None):
@@ -692,10 +683,10 @@ def image_export(fingerprint, target_path=None):
         salt '*' incus.image_export <fingerprint> target_path=/tmp/image.tar.gz
     """
     if not fingerprint:
-        return {'success': False, 'error': 'Fingerprint is required'}
+        return {"success": False, "error": "Fingerprint is required"}
 
     client = _client()
-    url = f'{client.base_url}/images/{quote(fingerprint)}/export'
+    url = f"{client.base_url}/images/{quote(fingerprint)}/export"
 
     try:
         response = client.session.get(url, stream=True, timeout=600)
@@ -703,17 +694,17 @@ def image_export(fingerprint, target_path=None):
 
         # If target_path not specified, return the content
         if not target_path:
-            return {'success': True, 'content': response.content}
+            return {"success": True, "content": response.content}
 
         # Save to file
-        with open(target_path, 'wb') as f:
+        with open(target_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
-        return {'success': True, 'message': f'Image {fingerprint} exported to {target_path}'}
+        return {"success": True, "message": f"Image {fingerprint} exported to {target_path}"}
 
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        return {"success": False, "error": str(e)}
 
 
 def image_refresh(fingerprint):
@@ -729,17 +720,17 @@ def image_refresh(fingerprint):
         salt '*' incus.image_refresh <fingerprint>
     """
     if not fingerprint:
-        return {'success': False, 'error': 'Fingerprint is required'}
+        return {"success": False, "error": "Fingerprint is required"}
 
     client = _client()
 
     # Refresh is done by sending a PATCH request
-    result = client._sync_request('PATCH', f'/images/{quote(fingerprint)}', data={})
+    result = client._sync_request("PATCH", f"/images/{quote(fingerprint)}", data={})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to refresh image')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to refresh image")}
 
-    return {'success': True, 'message': f'Image {fingerprint} refreshed successfully'}
+    return {"success": True, "message": f"Image {fingerprint} refreshed successfully"}
 
 
 def image_secret_create(fingerprint):
@@ -756,39 +747,39 @@ def image_secret_create(fingerprint):
         salt '*' incus.image_secret_create <fingerprint>
     """
     if not fingerprint:
-        return {'success': False, 'error': 'Fingerprint is required'}
+        return {"success": False, "error": "Fingerprint is required"}
 
     client = _client()
 
-    result = client._sync_request('POST', f'/images/{quote(fingerprint)}/secret', data={})
+    result = client._sync_request("POST", f"/images/{quote(fingerprint)}/secret", data={})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to create image secret')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to create image secret")}
 
-    metadata = result.get('metadata', {})
-    if isinstance(metadata, dict) and 'metadata' in metadata:
-        metadata = metadata.get('metadata', {})
+    metadata = result.get("metadata", {})
+    if isinstance(metadata, dict) and "metadata" in metadata:
+        metadata = metadata.get("metadata", {})
 
-    return {'success': True, 'secret': metadata}
+    return {"success": True, "secret": metadata}
 
 
 __all__ = [
-    'image_list',
-    'image_get',
-    'image_delete',
-    'image_create_from_file',
-    'image_create_from_remote',
-    'image_update_properties',
-    'image_update',
-    'image_set_public',
-    'image_alias_list',
-    'image_alias_get',
-    'image_alias_create',
-    'image_alias_update',
-    'image_alias_rename',
-    'image_alias_delete',
-    'image_copy',
-    'image_export',
-    'image_refresh',
-    'image_secret_create',
+    "image_list",
+    "image_get",
+    "image_delete",
+    "image_create_from_file",
+    "image_create_from_remote",
+    "image_update_properties",
+    "image_update",
+    "image_set_public",
+    "image_alias_list",
+    "image_alias_get",
+    "image_alias_create",
+    "image_alias_update",
+    "image_alias_rename",
+    "image_alias_delete",
+    "image_copy",
+    "image_export",
+    "image_refresh",
+    "image_secret_create",
 ]

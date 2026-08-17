@@ -14,7 +14,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Settings Management Functions ==========
+
 
 def settings_get():
     """
@@ -37,24 +39,24 @@ def settings_get():
     .. code-block:: python
 
         {
-            'success': True,
-            'settings': {
-                'config': {
-                    'core.https_address': '[::]:8443',
-                    'core.trust_password': 'secret',
-                    'images.auto_update_cached': 'true',
-                    'images.auto_update_interval': '6'
+            "success": True,
+            "settings": {
+                "config": {
+                    "core.https_address": "[::]:8443",
+                    "core.trust_password": "secret",
+                    "images.auto_update_cached": "true",
+                    "images.auto_update_interval": "6",
                 }
-            }
+            },
         }
     """
     client = _client()
-    result = client._request('GET', '')
+    result = client._request("GET", "")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to get settings')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to get settings")}
 
-    return {'success': True, 'settings': result.get('metadata', {})}
+    return {"success": True, "settings": result.get("metadata", {})}
 
 
 def settings_update(config):
@@ -90,42 +92,41 @@ def settings_update(config):
     .. code-block:: python
 
         # Enable HTTPS on all interfaces
-        incus.settings_update({'core.https_address': '[::]:8443'})
+        incus.settings_update({"core.https_address": "[::]:8443"})
 
         # Configure image auto-update
-        incus.settings_update({
-            'images.auto_update_cached': 'true',
-            'images.auto_update_interval': '12'
-        })
+        incus.settings_update(
+            {"images.auto_update_cached": "true", "images.auto_update_interval": "12"}
+        )
 
         # Set compression algorithm
-        incus.settings_update({'images.compression_algorithm': 'zstd'})
+        incus.settings_update({"images.compression_algorithm": "zstd"})
     """
     if not config or not isinstance(config, dict):
-        return {'success': False, 'error': 'config parameter must be a dictionary'}
+        return {"success": False, "error": "config parameter must be a dictionary"}
 
     client = _client()
 
     # Get current settings
-    current = client._request('GET', '')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get current settings')}
+    current = client._request("GET", "")
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get current settings")}
 
-    settings_data = current.get('metadata', {})
+    settings_data = current.get("metadata", {})
 
     # Update config
-    if 'config' not in settings_data:
-        settings_data['config'] = {}
+    if "config" not in settings_data:
+        settings_data["config"] = {}
 
-    settings_data['config'].update(config)
+    settings_data["config"].update(config)
 
     # Send update request
-    result = client._sync_request('PUT', '', data=settings_data)
+    result = client._sync_request("PUT", "", data=settings_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to update settings')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to update settings")}
 
-    return {'success': True, 'message': 'Server settings updated successfully'}
+    return {"success": True, "message": "Server settings updated successfully"}
 
 
 def settings_set(key, value):
@@ -152,16 +153,16 @@ def settings_set(key, value):
     .. code-block:: python
 
         # Enable HTTPS
-        incus.settings_set('core.https_address', '[::]:8443')
+        incus.settings_set("core.https_address", "[::]:8443")
 
         # Set auto-update interval
-        incus.settings_set('images.auto_update_interval', '12')
+        incus.settings_set("images.auto_update_interval", "12")
 
         # Set trust password
-        incus.settings_set('core.trust_password', 'mysecret')
+        incus.settings_set("core.trust_password", "mysecret")
     """
     if not key or not isinstance(key, str):
-        return {'success': False, 'error': 'key parameter must be a non-empty string'}
+        return {"success": False, "error": "key parameter must be a non-empty string"}
 
     return settings_update({key: str(value)})
 
@@ -188,36 +189,36 @@ def settings_unset(key):
     .. code-block:: python
 
         # Remove trust password (disable password authentication)
-        incus.settings_unset('core.trust_password')
+        incus.settings_unset("core.trust_password")
 
         # Reset auto-update interval to default
-        incus.settings_unset('images.auto_update_interval')
+        incus.settings_unset("images.auto_update_interval")
     """
     if not key or not isinstance(key, str):
-        return {'success': False, 'error': 'key parameter must be a non-empty string'}
+        return {"success": False, "error": "key parameter must be a non-empty string"}
 
     client = _client()
 
     # Get current settings
-    current = client._request('GET', '')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get current settings')}
+    current = client._request("GET", "")
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get current settings")}
 
-    settings_data = current.get('metadata', {})
+    settings_data = current.get("metadata", {})
 
     # Remove key from config
-    if 'config' in settings_data and key in settings_data['config']:
-        del settings_data['config'][key]
+    if "config" in settings_data and key in settings_data["config"]:
+        del settings_data["config"][key]
     else:
-        return {'success': False, 'error': f'Configuration key "{key}" not found'}
+        return {"success": False, "error": f'Configuration key "{key}" not found'}
 
     # Send update request
-    result = client._sync_request('PUT', '', data=settings_data)
+    result = client._sync_request("PUT", "", data=settings_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to update settings')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to update settings")}
 
-    return {'success': True, 'message': f'Configuration key "{key}" unset successfully'}
+    return {"success": True, "message": f'Configuration key "{key}" unset successfully'}
 
 
 def settings_replace(config):
@@ -242,10 +243,9 @@ def settings_replace(config):
     .. code-block:: python
 
         # Replace all settings with minimal config
-        incus.settings_replace({
-            'core.https_address': '[::]:8443',
-            'images.auto_update_cached': 'true'
-        })
+        incus.settings_replace(
+            {"core.https_address": "[::]:8443", "images.auto_update_cached": "true"}
+        )
 
     Warning:
         This function replaces ALL server configuration settings.
@@ -254,33 +254,33 @@ def settings_replace(config):
         instead if you want to modify specific settings.
     """
     if not config or not isinstance(config, dict):
-        return {'success': False, 'error': 'config parameter must be a dictionary'}
+        return {"success": False, "error": "config parameter must be a dictionary"}
 
     client = _client()
 
     # Get current settings structure
-    current = client._request('GET', '')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get current settings')}
+    current = client._request("GET", "")
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get current settings")}
 
-    settings_data = current.get('metadata', {})
+    settings_data = current.get("metadata", {})
 
     # Replace config entirely
-    settings_data['config'] = config
+    settings_data["config"] = config
 
     # Send update request
-    result = client._sync_request('PUT', '', data=settings_data)
+    result = client._sync_request("PUT", "", data=settings_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result.get('error', 'Failed to replace settings')}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result.get("error", "Failed to replace settings")}
 
-    return {'success': True, 'message': 'Server settings replaced successfully'}
+    return {"success": True, "message": "Server settings replaced successfully"}
 
 
 __all__ = [
-    'settings_get',
-    'settings_update',
-    'settings_set',
-    'settings_unset',
-    'settings_replace',
+    "settings_get",
+    "settings_update",
+    "settings_set",
+    "settings_unset",
+    "settings_replace",
 ]

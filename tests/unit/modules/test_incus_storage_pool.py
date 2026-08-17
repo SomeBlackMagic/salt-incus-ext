@@ -51,9 +51,7 @@ def test_client_creates_incus_client(monkeypatch):
         ),
     ],
 )
-def test_storage_pool_queries(
-    client, function, args, path, params, result_key, metadata
-):
+def test_storage_pool_queries(client, function, args, path, params, result_key, metadata):
     client._request.return_value = {"error_code": 0, "metadata": metadata}
 
     assert function(*args) == {"success": True, result_key: metadata}
@@ -83,9 +81,7 @@ def test_storage_pool_queries(
         ),
     ],
 )
-def test_storage_pool_queries_default_to_empty_metadata(
-    client, function, args, expected
-):
+def test_storage_pool_queries_default_to_empty_metadata(client, function, args, expected):
     client._request.return_value = {"error_code": 0}
 
     assert function(*args) == expected
@@ -202,9 +198,7 @@ def test_storage_pool_update_preserves_fields_and_returns_put_error(client):
         "success": False,
         "error": "read-only",
     }
-    client._sync_request.assert_called_once_with(
-        "PUT", "/storage-pools/pool", data=metadata
-    )
+    client._sync_request.assert_called_once_with("PUT", "/storage-pools/pool", data=metadata)
 
 
 def test_storage_pool_update_returns_get_error_without_put(client):
@@ -238,6 +232,4 @@ def test_storage_pool_delete_quotes_name(client):
         "success": True,
         "message": "Storage pool pool one deleted successfully",
     }
-    client._sync_request.assert_called_once_with(
-        "DELETE", "/storage-pools/pool%20one"
-    )
+    client._sync_request.assert_called_once_with("DELETE", "/storage-pools/pool%20one")

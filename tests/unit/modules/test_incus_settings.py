@@ -58,9 +58,7 @@ def test_settings_get_returns_api_error(client, response, error):
 
 
 @pytest.mark.parametrize("config", [None, {}, [], "invalid", 1])
-def test_settings_update_rejects_invalid_config_before_creating_client(
-    monkeypatch, config
-):
+def test_settings_update_rejects_invalid_config_before_creating_client(monkeypatch, config):
     factory = Mock()
     monkeypatch.setattr(incus_settings_mod, "_client", factory)
 
@@ -189,9 +187,7 @@ def test_settings_set_converts_value_and_delegates(monkeypatch, value, string_va
 
 
 @pytest.mark.parametrize("key", [None, "", 1, [], {}])
-def test_settings_unset_rejects_invalid_key_before_creating_client(
-    monkeypatch, key
-):
+def test_settings_unset_rejects_invalid_key_before_creating_client(monkeypatch, key):
     factory = Mock()
     monkeypatch.setattr(incus_settings_mod, "_client", factory)
 
@@ -261,9 +257,7 @@ def test_settings_unset_returns_get_error_without_put(client, response, error):
         ({"error_code": 1}, "Failed to update settings"),
     ],
 )
-def test_settings_unset_returns_put_error_after_removing_key(
-    client, response, error
-):
+def test_settings_unset_returns_put_error_after_removing_key(client, response, error):
     client._request.return_value = {
         "error_code": 0,
         "metadata": {"config": {"key": "value"}},
@@ -277,9 +271,7 @@ def test_settings_unset_returns_put_error_after_removing_key(
 
 
 @pytest.mark.parametrize("config", [None, {}, [], "invalid", 1])
-def test_settings_replace_rejects_invalid_config_before_creating_client(
-    monkeypatch, config
-):
+def test_settings_replace_rejects_invalid_config_before_creating_client(monkeypatch, config):
     factory = Mock()
     monkeypatch.setattr(incus_settings_mod, "_client", factory)
 
@@ -318,9 +310,7 @@ def test_settings_replace_handles_missing_metadata(client):
 
     incus_settings_mod.settings_replace({"key": "value"})
 
-    client._sync_request.assert_called_once_with(
-        "PUT", "", data={"config": {"key": "value"}}
-    )
+    client._sync_request.assert_called_once_with("PUT", "", data={"config": {"key": "value"}})
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,7 @@
 import builtins
 import runpy
-from unittest.mock import Mock, call
+from unittest.mock import Mock
+from unittest.mock import call
 
 import pytest
 import requests
@@ -93,12 +94,8 @@ def test_load_config_merges_defaults_and_uses_cloud_certificate_fallback(monkeyp
         {"api_client": "invalid"},
         {"api_client": {"salt_cloud_storage": "invalid"}},
         {
-            "connection": {
-                "cert_storage": {"cert": "configured-cert", "key": "configured-key"}
-            },
-            "api_client": {
-                "salt_cloud_storage": {"cert": "fallback-cert", "key": "fallback-key"}
-            },
+            "connection": {"cert_storage": {"cert": "configured-cert", "key": "configured-key"}},
+            "api_client": {"salt_cloud_storage": {"cert": "fallback-cert", "key": "fallback-key"}},
         },
     ],
 )
@@ -219,12 +216,12 @@ def test_track_temp_file_ignores_empty_paths():
 
 
 def install_https_storage_helpers(
-        monkeypatch,
-        *,
-        cert=(None, False),
-        key=(None, False),
-        verify=(True, False),
-        paths=None,
+    monkeypatch,
+    *,
+    cert=(None, False),
+    key=(None, False),
+    verify=(True, False),
+    paths=None,
 ):
     """Install the certificate-storage collaborators used by the HTTPS branch."""
     monkeypatch.setattr(incus_mod, "_normalize_cert_storage", Mock(return_value={}), raising=False)
@@ -232,8 +229,12 @@ def install_https_storage_helpers(
     def resolve(_storage, name, default=None):
         return {"cert": cert, "key": key, "verify": verify}[name]
 
-    monkeypatch.setattr(incus_mod, "_resolve_cert_storage_value", Mock(side_effect=resolve), raising=False)
-    monkeypatch.setattr(incus_mod, "_coerce_verify_value", Mock(side_effect=lambda value: value), raising=False)
+    monkeypatch.setattr(
+        incus_mod, "_resolve_cert_storage_value", Mock(side_effect=resolve), raising=False
+    )
+    monkeypatch.setattr(
+        incus_mod, "_coerce_verify_value", Mock(side_effect=lambda value: value), raising=False
+    )
     monkeypatch.setattr(
         incus_mod,
         "_ensure_file_path",
@@ -321,7 +322,7 @@ def test_create_https_session_uses_existing_ca_file(monkeypatch):
 
     assert client._create_session() is session
     assert session.verify == "/etc/incus/ca.crt"
-    assert client._temp_files == []
+    assert not client._temp_files
 
 
 def test_create_session_rejects_unsupported_connection_type(monkeypatch):
@@ -476,10 +477,12 @@ def test_request_handles_connection_error_without_response():
 
 def test_wait_for_operation_polls_until_success(monkeypatch):
     client = make_client()
-    client._sync_request = Mock(side_effect=[
-        {"error_code": 0, "metadata": {"status_code": 103}},
-        {"error_code": 0, "metadata": {"status_code": 200}, "success": True},
-    ])
+    client._sync_request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 200}, "success": True},
+        ]
+    )
     sleep = Mock()
     time_mock = Mock()
     time_mock.time.return_value = 0
@@ -509,10 +512,12 @@ def test_wait_for_operation_rejects_invalid_url():
 
 def test_wait_for_operation_returns_api_failure():
     client = make_client()
-    client._sync_request = Mock(return_value={
-        "error_code": 0,
-        "metadata": {"status_code": 400, "err": "Instance failed to start"},
-    })
+    client._sync_request = Mock(
+        return_value={
+            "error_code": 0,
+            "metadata": {"status_code": 400, "err": "Instance failed to start"},
+        }
+    )
 
     result = client._wait_for_operation("/1.0/operations/operation-id")
 
@@ -540,10 +545,12 @@ def test_wait_for_operation_times_out(monkeypatch):
 
 def test_wait_for_operation_returns_request_error():
     client = make_client()
-    client._sync_request = Mock(return_value={
-        "error_code": 503,
-        "error": "offline",
-    })
+    client._sync_request = Mock(
+        return_value={
+            "error_code": 503,
+            "error": "offline",
+        }
+    )
 
     result = client._wait_for_operation("/1.0/operations/operation-id")
 
@@ -556,10 +563,12 @@ def test_wait_for_operation_returns_request_error():
 
 def test_wait_for_operation_returns_success():
     client = make_client()
-    client._sync_request = Mock(return_value={
-        "error_code": 0,
-        "metadata": {"status_code": 200},
-    })
+    client._sync_request = Mock(
+        return_value={
+            "error_code": 0,
+            "metadata": {"status_code": 200},
+        }
+    )
 
     result = client._wait_for_operation("/1.0/operations/operation-id")
 
@@ -568,10 +577,12 @@ def test_wait_for_operation_returns_success():
 
 def test_wait_for_operation_returns_unexpected_status():
     client = make_client()
-    client._sync_request = Mock(return_value={
-        "error_code": 0,
-        "metadata": {"status_code": 999},
-    })
+    client._sync_request = Mock(
+        return_value={
+            "error_code": 0,
+            "metadata": {"status_code": 999},
+        }
+    )
 
     result = client._wait_for_operation("/1.0/operations/operation-id")
 
@@ -641,7 +652,7 @@ def test_close_closes_session_and_removes_temporary_files(monkeypatch):
 
     session.close.assert_called_once_with()
     assert unlink.call_args_list == [call("/tmp/incus-cert.crt"), call("/tmp/incus-key.key")]
-    assert client._temp_files == []
+    assert not client._temp_files
 
 
 def test_close_ignores_session_and_unlink_errors(monkeypatch):
@@ -654,7 +665,7 @@ def test_close_ignores_session_and_unlink_errors(monkeypatch):
 
     client.close()
 
-    assert client._temp_files == []
+    assert not client._temp_files
 
 
 def test_close_without_session_and_destructor(monkeypatch):
@@ -662,7 +673,7 @@ def test_close_without_session_and_destructor(monkeypatch):
     client = make_client()
     monkeypatch.setattr(client, "close", close)
 
-    client.__del__()
+    client.__del__()  # pylint: disable=unnecessary-dunder-call
 
     close.assert_called_once_with()
 
