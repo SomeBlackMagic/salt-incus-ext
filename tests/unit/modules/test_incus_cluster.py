@@ -1,4 +1,5 @@
-from unittest.mock import Mock, call
+from unittest.mock import Mock
+from unittest.mock import call
 
 import pytest
 
@@ -49,18 +50,14 @@ def test_cluster_member_list_passes_recursion(client):
         "success": True,
         "members": members,
     }
-    client._request.assert_called_once_with(
-        "GET", "/cluster/members", params={"recursion": 2}
-    )
+    client._request.assert_called_once_with("GET", "/cluster/members", params={"recursion": 2})
 
 
 def test_cluster_member_list_defaults_to_empty_metadata(client):
     client._request.return_value = {"error_code": 0}
 
     assert incus_cluster_mod.cluster_member_list() == {"success": True, "members": []}
-    client._request.assert_called_once_with(
-        "GET", "/cluster/members", params={"recursion": 0}
-    )
+    client._request.assert_called_once_with("GET", "/cluster/members", params={"recursion": 0})
 
 
 @pytest.mark.parametrize(
@@ -123,9 +120,7 @@ def test_cluster_member_add_omits_empty_password(client, cluster_password):
     ("force", "expected_params"),
     [(False, {}), (True, {"force": "1"})],
 )
-def test_cluster_member_remove_quotes_name_and_handles_force(
-    client, force, expected_params
-):
+def test_cluster_member_remove_quotes_name_and_handles_force(client, force, expected_params):
     client._sync_request.return_value = {"error_code": 0}
 
     result = incus_cluster_mod.cluster_member_remove("node two/primary", force=force)

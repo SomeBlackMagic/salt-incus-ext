@@ -347,11 +347,9 @@ def test_volume_create_from_snapshot_builds_request(client):
 def test_volume_create_from_snapshot_normalizes_empty_config(client, config):
     client._sync_request.return_value = {"error_code": 0}
 
-    incus_volume_mod.volume_create_from_snapshot(
-        "pool", "volume", "snapshot", "new", config=config
-    )
+    incus_volume_mod.volume_create_from_snapshot("pool", "volume", "snapshot", "new", config=config)
 
-    assert client._sync_request.call_args.kwargs["data"]["config"] == {}
+    assert not client._sync_request.call_args.kwargs["data"]["config"]
 
 
 @pytest.mark.parametrize(
@@ -433,9 +431,7 @@ def test_volume_move_handles_target_name(client, target_volume, expected_name):
         ),
     ],
 )
-def test_simple_volume_mutations(
-    client, function, args, method, path, data, message
-):
+def test_simple_volume_mutations(client, function, args, method, path, data, message):
     client._sync_request.return_value = {"error_code": 0}
 
     assert function(*args) == {"success": True, "message": message}

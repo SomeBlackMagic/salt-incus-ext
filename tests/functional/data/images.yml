@@ -1,0 +1,184 @@
+cases:
+  # ============================================================
+  # CASE 1: image_001 - Ubuntu 22.04 from remote
+  # Note: "ubuntu2204" becomes the PRIMARY alias
+  # ============================================================
+  - name: image_001
+    pillars:
+      incus:
+        images:
+          ubuntu2204:
+            auto_update: false
+            public: false
+            properties:
+              description: Test image ubuntu/22.04
+            source:
+              server: https://images.linuxcontainers.org
+              alias: ubuntu/22.04
+              protocol: simplestreams
+    command: state.apply images
+    expected:
+      salt_output_contains:
+        - "ubuntu2204"
+        - "changes"
+      local_shell:
+        - cmd: incus image alias list
+          expect_stdout:
+            - "ubuntu2204"
+    cleanup:
+      - incus image delete ubuntu2204
+
+  # ============================================================
+  # CASE 2: image_002 - Debian 12 with multiple aliases
+  # Note: "debian12" is PRIMARY, additional aliases in list
+  # ============================================================
+  - name: image_002
+    pillars:
+      incus:
+        images:
+          debian12:
+            auto_update: true
+            public: true
+            properties:
+              description: Test image debian/12
+              os: debian
+              release: "12"
+            source:
+              server: https://images.linuxcontainers.org
+              alias: debian/12
+              protocol: simplestreams
+            aliases:
+              - debian-bookworm
+              - debian-latest
+    command: state.apply images
+    expected:
+      salt_output_contains:
+        - "debian12"
+        - "changes"
+      local_shell:
+        - cmd: incus image alias list
+          expect_stdout:
+            - "debian12"
+            - "debian-bookworm"
+            - "debian-latest"
+    cleanup:
+      - incus image delete debian12
+
+  # ============================================================
+  # CASE 3: image_003 - Alpine with compression algorithm
+  # ============================================================
+  - name: image_003
+    pillars:
+      incus:
+        images:
+          alpine-edge:
+            auto_update: false
+            public: false
+            properties:
+              description: Test image alpine edge
+            source:
+              server: https://images.linuxcontainers.org
+              alias: alpine/edge
+              protocol: simplestreams
+            compression_algorithm: zstd
+    command: state.apply images
+    expected:
+      salt_output_contains:
+        - "alpine-edge"
+        - "changes"
+      local_shell:
+        - cmd: incus image alias list
+          expect_stdout:
+            - "alpine-edge"
+    cleanup:
+      - incus image delete alpine-edge
+
+  # ============================================================
+  # CASE 4: image_004 - Test idempotency (no changes on rerun)
+  # ============================================================
+  - name: image_004
+    setup:
+      # Pre-create the image with the expected configuration
+      - "incus image copy images:alpine/3.21 local: --alias alpine321"
+    pillars:
+      incus:
+        images:
+          alpine321:
+            auto_update: false
+            public: false
+            source:
+              server: https://images.linuxcontainers.org
+              alias: alpine/3.21
+              protocol: simplestreams
+    command: state.apply images
+    expected:
+      salt_output_contains:
+        - "alpine321"
+        - "already present"
+    cleanup:
+      - incus image delete alpine321
+
+  # ============================================================
+  # CASE 5: image_005 - Test alias update (add/remove aliases)
+  # ============================================================
+  - name: image_005
+    setup:
+      # Pre-create image with one alias
+      - "incus image copy images:alpine/3.22 local: --alias test-alpine"
+    pillars:
+      incus:
+        images:
+          test-alpine:
+            auto_update: false
+            public: false
+            properties:
+              description: Test Alpine
+            aliases:
+              - alpine-test
+              - test-image
+            source:
+              server: https://images.linuxcontainers.org
+              alias: alpine/3.22
+              protocol: simplestreams
+    command: state.apply images
+    expected:
+      salt_output_contains:
+        - "test-alpine"
+        - "changes"
+      local_shell:
+        - cmd: incus image alias list
+          expect_stdout:
+            - "test-alpine"
+            - "alpine-test"
+            - "test-image"
+    cleanup:
+      - incus image delete test-alpine
+
+#  # ============================================================
+#  # CASE 6: image_006 - Test public flag update
+#  # ============================================================
+#  - name: image_006
+#    setup:
+#      # Pre-create image with public=false
+#      - "incus image copy images:alpine/3.18 local: && incus image alias create alpine-test $(incus image list -f json | jq -r '.[0].fingerprint')"
+#    pillars:
+#      incus:
+#        images:
+#          alpine-test:
+#            auto_update: false
+#            public: true
+#            source:
+#              server: https://images.linuxcontainers.org
+#              alias: alpine/3.18
+#              protocol: simplestreams
+#    command: state.apply images
+#    expected:
+#      salt_output_contains:
+#        - "alpine-test"
+#        - "changes"
+#      local_shell:
+#        - cmd: incus image show alpine-test
+#          expect_stdout:
+#            - "public: true"
+#    cleanup:
+#      - incus image delete alpine-test

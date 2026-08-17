@@ -1,0 +1,495 @@
+cases:
+  # ============================================================
+  # CASE 1: instance_001 - Container ubuntu minimal
+  # ============================================================
+  - name: instance_001
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-1:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '1'
+              limits.memory: 1GiB
+            profiles:
+              - default
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-1"
+        - "changes"
+      local_shell:
+        - cmd: incus list test-cont-1
+          expect_stdout:
+            - "test-cont-1"
+            - "CONTAINER"
+    cleanup:
+      - incus delete test-cont-1 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 2: instance_002 - VM debian ephemeral with autostart
+  # ============================================================
+  - name: instance_002
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-virt-2:
+            instance_type: virtual-machine
+            source:
+              type: image
+              alias: debian/12-vm
+            config:
+              limits.cpu: '2'
+              limits.memory: 2GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '20'
+            profiles:
+            - default
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-virt-2"
+        - "changes"
+      local_shell:
+        - cmd: incus list test-virt-2
+          expect_stdout:
+            - "test-virt-2"
+            - "VIRTUAL-MACHINE"
+    cleanup:
+      - incus delete test-virt-2 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 3: instance_003 - VM alpine with custom profile
+  # ============================================================
+  - name: instance_003
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-virt-3:
+            instance_type: virtual-machine
+            source:
+              type: image
+              alias: ubuntu/jammy
+            config:
+              limits.cpu: '4'
+              limits.memory: 4GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '30'
+            profiles:
+            - default
+            - custom
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-virt-3"
+        - "changes"
+      local_shell:
+        - cmd: incus list test-virt-3
+          expect_stdout:
+            - "test-virt-3"
+    cleanup:
+      - incus delete test-virt-3 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 4: instance_004 - Container ubuntu ephemeral custom profile
+  # ============================================================
+  - name: instance_004
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-4:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '2'
+              limits.memory: 8GiB
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-4"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-4 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 5: instance_005 - Container debian high memory
+  # ============================================================
+  - name: instance_005
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-5:
+            instance_type: container
+            source:
+              type: image
+              alias: debian/12
+            config:
+              limits.cpu: '4'
+              limits.memory: 8GiB
+            profiles:
+            - default
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-5"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-5 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 6: instance_006 - VM ubuntu ephemeral high priority
+  # ============================================================
+  - name: instance_006
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-virt-6:
+            instance_type: virtual-machine
+            source:
+              type: image
+              alias: ubuntu/jammy
+            config:
+              limits.cpu: '1'
+              limits.memory: 8GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '60'
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-virt-6"
+        - "changes"
+    cleanup:
+      - incus delete test-virt-6 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 7: instance_007 - Container ubuntu with autostart
+  # ============================================================
+  - name: instance_007
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-7:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '4'
+              limits.memory: 2GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '70'
+            profiles:
+            - default
+            - custom
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-7"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-7 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 8: instance_008 - VM debian ephemeral custom profile
+  # ============================================================
+  - name: instance_008
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-virt-8:
+            instance_type: virtual-machine
+            source:
+              type: image
+              alias: debian/12-vm
+            config:
+              limits.cpu: '1'
+              limits.memory: 4GiB
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-virt-8"
+        - "changes"
+    cleanup:
+      - incus delete test-virt-8 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 9: instance_009 - VM ubuntu minimal ephemeral
+  # ============================================================
+  - name: instance_009
+    requires:
+      - cmd: "test -e /dev/kvm"
+        message: "VM creation requires KVM support (/dev/kvm not found)"
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-virt-9:
+            instance_type: virtual-machine
+            source:
+              type: image
+              alias: ubuntu/jammy
+            config:
+              limits.cpu: '1'
+              limits.memory: 1GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '90'
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-virt-9"
+        - "changes"
+    cleanup:
+      - incus delete test-virt-9 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 10: instance_010 - Container ubuntu with autostart priority 0
+  # ============================================================
+  - name: instance_010
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-10:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '2'
+              limits.memory: 4GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '0'
+            profiles:
+            - default
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-10"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-10 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 11: instance_011 - Container ubuntu medium with custom profile
+  # ============================================================
+  - name: instance_011
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-11:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '2'
+              limits.memory: 4GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '10'
+            profiles:
+            - default
+            - custom
+            ephemeral: false
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-11"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-11 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 12: instance_012 - Container ubuntu ephemeral high CPU
+  # ============================================================
+  - name: instance_012
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-12:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '4'
+              limits.memory: 2GiB
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-12"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-12 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 13: instance_013 - Container debian ephemeral minimal memory
+  # ============================================================
+  - name: instance_013
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-13:
+            instance_type: container
+            source:
+              type: image
+              alias: debian/12
+            config:
+              limits.cpu: '4'
+              limits.memory: 1GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '30'
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-13"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-13 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 14: instance_014 - Container ubuntu ephemeral low resources
+  # ============================================================
+  - name: instance_014
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-14:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '2'
+              limits.memory: 1GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '40'
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-14"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-14 --force
+      - incus profile delete custom
+
+  # ============================================================
+  # CASE 15: instance_015 - Container ubuntu ephemeral medium
+  # ============================================================
+  - name: instance_015
+    setup:
+      - incus profile create custom 2>/dev/null || true
+    pillars:
+      incus:
+        instances:
+          test-cont-15:
+            instance_type: container
+            source:
+              type: image
+              alias: ubuntu/22.04
+            config:
+              limits.cpu: '1'
+              limits.memory: 2GiB
+              boot.autostart: 'true'
+              boot.autostart.priority: '50'
+            profiles:
+            - default
+            - custom
+            ephemeral: true
+    command: state.apply instances
+    expected:
+      salt_output_contains:
+        - "test-cont-15"
+        - "changes"
+    cleanup:
+      - incus delete test-cont-15 --force
+      - incus profile delete custom

@@ -16,7 +16,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Profile Management Functions ==========
+
 
 def profile_list(recursion=0):
     """
@@ -36,12 +38,12 @@ def profile_list(recursion=0):
     :return: Dictionary with 'success' status and 'profiles' list
     """
     client = _client()
-    result = client._request('GET', '/profiles', params={'recursion': recursion})
+    result = client._request("GET", "/profiles", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'profiles': result.get('metadata', [])}
+    return {"success": True, "profiles": result.get("metadata", [])}
 
 
 def profile_get(name):
@@ -62,15 +64,15 @@ def profile_get(name):
     :return: Dictionary with 'success' status and 'profile' information
     """
     client = _client()
-    result = client._request('GET', f'/profiles/{quote(name)}')
+    result = client._request("GET", f"/profiles/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'profile': result.get('metadata', {})}
+    return {"success": True, "profile": result.get("metadata", {})}
 
 
-def profile_create(name, config=None, devices=None, description=''):
+def profile_create(name, config=None, devices=None, description=""):
     """
     Create a new profile
 
@@ -96,18 +98,18 @@ def profile_create(name, config=None, devices=None, description=''):
     client = _client()
 
     data = {
-        'name': name,
-        'config': config or {},
-        'devices': devices or {},
-        'description': description
+        "name": name,
+        "config": config or {},
+        "devices": devices or {},
+        "description": description,
     }
 
-    result = client._sync_request('POST', '/profiles', data=data)
+    result = client._sync_request("POST", "/profiles", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Profile {name} created successfully'}
+    return {"success": True, "message": f"Profile {name} created successfully"}
 
 
 def profile_update(name, config=None, devices=None, description=None):
@@ -136,34 +138,34 @@ def profile_update(name, config=None, devices=None, description=None):
 
     # Get current profile config
     current = profile_get(name)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    profile_data = current['profile']
+    profile_data = current["profile"]
 
     # Update fields
     if config:
-        profile_data['config'].update(config)
+        profile_data["config"].update(config)
 
     if devices:
         # Deep merge devices: update properties within existing devices
         for dev_name, dev_conf in devices.items():
-            if dev_name in profile_data['devices']:
+            if dev_name in profile_data["devices"]:
                 # Device exists, merge properties
-                profile_data['devices'][dev_name].update(dev_conf)
+                profile_data["devices"][dev_name].update(dev_conf)
             else:
                 # New device, add it
-                profile_data['devices'][dev_name] = dev_conf
+                profile_data["devices"][dev_name] = dev_conf
 
     if description is not None:
-        profile_data['description'] = description
+        profile_data["description"] = description
 
-    result = client._sync_request('PUT', f'/profiles/{quote(name)}', data=profile_data)
+    result = client._sync_request("PUT", f"/profiles/{quote(name)}", data=profile_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Profile {name} updated successfully'}
+    return {"success": True, "message": f"Profile {name} updated successfully"}
 
 
 def profile_rename(name, new_name):
@@ -186,16 +188,14 @@ def profile_rename(name, new_name):
     """
     client = _client()
 
-    data = {
-        'name': new_name
-    }
+    data = {"name": new_name}
 
-    result = client._sync_request('POST', f'/profiles/{quote(name)}', data=data)
+    result = client._sync_request("POST", f"/profiles/{quote(name)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Profile {name} renamed to {new_name} successfully'}
+    return {"success": True, "message": f"Profile {name} renamed to {new_name} successfully"}
 
 
 def profile_copy(name, new_name, description=None):
@@ -221,25 +221,27 @@ def profile_copy(name, new_name, description=None):
 
     # Get source profile
     source = profile_get(name)
-    if not source.get('success'):
+    if not source.get("success"):
         return source
 
-    profile_data = source['profile']
+    profile_data = source["profile"]
 
     # Prepare data for new profile
     data = {
-        'name': new_name,
-        'config': profile_data.get('config', {}),
-        'devices': profile_data.get('devices', {}),
-        'description': description if description is not None else profile_data.get('description', '')
+        "name": new_name,
+        "config": profile_data.get("config", {}),
+        "devices": profile_data.get("devices", {}),
+        "description": (
+            description if description is not None else profile_data.get("description", "")
+        ),
     }
 
-    result = client._sync_request('POST', '/profiles', data=data)
+    result = client._sync_request("POST", "/profiles", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Profile {name} copied to {new_name} successfully'}
+    return {"success": True, "message": f"Profile {name} copied to {new_name} successfully"}
 
 
 def profile_delete(name):
@@ -260,20 +262,20 @@ def profile_delete(name):
     :return: Dictionary with 'success' status and message
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/profiles/{quote(name)}')
+    result = client._sync_request("DELETE", f"/profiles/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Profile {name} deleted successfully'}
+    return {"success": True, "message": f"Profile {name} deleted successfully"}
 
 
 __all__ = [
-    'profile_list',
-    'profile_get',
-    'profile_create',
-    'profile_update',
-    'profile_rename',
-    'profile_copy',
-    'profile_delete',
+    "profile_list",
+    "profile_get",
+    "profile_create",
+    "profile_update",
+    "profile_rename",
+    "profile_copy",
+    "profile_delete",
 ]

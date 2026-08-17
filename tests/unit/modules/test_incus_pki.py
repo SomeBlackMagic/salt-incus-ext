@@ -2,7 +2,9 @@ import builtins
 import hashlib
 import os
 import runpy
-from unittest.mock import Mock, call, mock_open
+from unittest.mock import Mock
+from unittest.mock import call
+from unittest.mock import mock_open
 
 import pytest
 
@@ -39,9 +41,7 @@ def test_virtual(monkeypatch, has_cryptography, expected):
 
 def test_api_client_cfg_reads_mapping(monkeypatch):
     config_get = Mock(return_value={"api_client": {"generate": {"cn": "client"}}})
-    monkeypatch.setattr(
-        incus_pki_mod, "__salt__", {"config.get": config_get}, raising=False
-    )
+    monkeypatch.setattr(incus_pki_mod, "__salt__", {"config.get": config_get}, raising=False)
 
     assert incus_pki_mod._api_client_cfg() == {"generate": {"cn": "client"}}
     config_get.assert_called_once_with("incus", {})
@@ -50,7 +50,7 @@ def test_api_client_cfg_reads_mapping(monkeypatch):
 def test_api_client_cfg_uses_fallback_when_config_get_is_missing(monkeypatch):
     monkeypatch.setattr(incus_pki_mod, "__salt__", {}, raising=False)
 
-    assert incus_pki_mod._api_client_cfg() == {}
+    assert not incus_pki_mod._api_client_cfg()
 
 
 @pytest.mark.parametrize(
@@ -65,7 +65,7 @@ def test_api_client_cfg_rejects_non_mapping_sections(monkeypatch, config):
         raising=False,
     )
 
-    assert incus_pki_mod._api_client_cfg() == {}
+    assert not incus_pki_mod._api_client_cfg()
 
 
 @pytest.mark.parametrize(
@@ -82,12 +82,8 @@ def test_api_client_cfg_rejects_non_mapping_sections(monkeypatch, config):
         ({}, incus_pki_mod.DEFAULT_STORAGE),
     ],
 )
-def test_normalize_storage_uses_configured_precedence(
-    monkeypatch, api_client, expected
-):
-    monkeypatch.setattr(
-        incus_pki_mod, "_api_client_cfg", Mock(return_value=api_client)
-    )
+def test_normalize_storage_uses_configured_precedence(monkeypatch, api_client, expected):
+    monkeypatch.setattr(incus_pki_mod, "_api_client_cfg", Mock(return_value=api_client))
 
     assert incus_pki_mod._normalize_storage() == expected
 
@@ -168,25 +164,17 @@ def test_storage_read_returns_none_for_missing_target():
 
 def test_storage_read_gets_sdb_value_with_strict_mode(monkeypatch):
     sdb_get = Mock(return_value="certificate")
-    monkeypatch.setattr(
-        incus_pki_mod, "__salt__", {"sdb.get": sdb_get}, raising=False
-    )
+    monkeypatch.setattr(incus_pki_mod, "__salt__", {"sdb.get": sdb_get}, raising=False)
 
-    assert incus_pki_mod._storage_read({"cert": "sdb://pki/cert"}, "cert") == (
-        "certificate"
-    )
+    assert incus_pki_mod._storage_read({"cert": "sdb://pki/cert"}, "cert") == ("certificate")
     sdb_get.assert_called_once_with("sdb://pki/cert", strict=True)
 
 
 def test_storage_read_retries_sdb_without_strict_for_old_salt(monkeypatch):
     sdb_get = Mock(side_effect=[TypeError("unsupported"), "certificate"])
-    monkeypatch.setattr(
-        incus_pki_mod, "__salt__", {"sdb.get": sdb_get}, raising=False
-    )
+    monkeypatch.setattr(incus_pki_mod, "__salt__", {"sdb.get": sdb_get}, raising=False)
 
-    assert incus_pki_mod._storage_read({"cert": "sdb://pki/cert"}, "cert") == (
-        "certificate"
-    )
+    assert incus_pki_mod._storage_read({"cert": "sdb://pki/cert"}, "cert") == ("certificate")
     assert sdb_get.call_args_list == [
         call("sdb://pki/cert", strict=True),
         call("sdb://pki/cert"),
@@ -235,9 +223,7 @@ def test_storage_read_normalizes_empty_sdb_value(monkeypatch, value):
 )
 def test_storage_read_uses_salt_fileserver(monkeypatch, value, expected):
     get_file = Mock(return_value=value)
-    monkeypatch.setattr(
-        incus_pki_mod, "__salt__", {"cp.get_file_str": get_file}, raising=False
-    )
+    monkeypatch.setattr(incus_pki_mod, "__salt__", {"cp.get_file_str": get_file}, raising=False)
 
     assert incus_pki_mod._storage_read({"cert": "salt://pki/cert"}, "cert") == expected
     get_file.assert_called_once_with("salt://pki/cert")
@@ -258,30 +244,22 @@ def test_storage_read_reads_local_file(tmp_path):
 
 def test_storage_write_sets_sdb_value(monkeypatch):
     sdb_set = Mock()
-    monkeypatch.setattr(
-        incus_pki_mod, "__salt__", {"sdb.set": sdb_set}, raising=False
-    )
+    monkeypatch.setattr(incus_pki_mod, "__salt__", {"sdb.set": sdb_set}, raising=False)
 
-    incus_pki_mod._storage_write(
-        {"cert": "sdb://pki/cert"}, "cert", "certificate", 0o644
-    )
+    incus_pki_mod._storage_write({"cert": "sdb://pki/cert"}, "cert", "certificate", 0o644)
 
     sdb_set.assert_called_once_with("sdb://pki/cert", "certificate")
 
 
 def test_storage_write_rejects_salt_fileserver_target():
     with pytest.raises(ValueError, match="salt:// is read-only"):
-        incus_pki_mod._storage_write(
-            {"cert": "salt://pki/cert"}, "cert", "certificate", 0o644
-        )
+        incus_pki_mod._storage_write({"cert": "salt://pki/cert"}, "cert", "certificate", 0o644)
 
 
 def test_storage_write_creates_secure_directory_and_file(tmp_path):
     target = tmp_path / "pki" / "client.key"
 
-    incus_pki_mod._storage_write(
-        {"key": str(target)}, "key", "private-key", 0o600
-    )
+    incus_pki_mod._storage_write({"key": str(target)}, "key", "private-key", 0o600)
 
     assert target.read_text(encoding="utf-8") == "private-key"
     assert os.stat(target).st_mode & 0o777 == 0o600
@@ -346,9 +324,7 @@ def test_validate_cert_wraps_parser_error(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="Invalid certificate PEM.*bad cert"):
-        incus_pki_mod._validate_cert_pem(
-            "-----BEGIN CERTIFICATE-----\nbad", "source"
-        )
+        incus_pki_mod._validate_cert_pem("-----BEGIN CERTIFICATE-----\nbad", "source")
 
 
 @pytest.mark.parametrize("key_pem", [None, b"private-key", 1])
@@ -373,19 +349,13 @@ def test_validate_private_key_wraps_parser_error(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="Invalid private key PEM.*bad key"):
-        incus_pki_mod._validate_private_key_pem(
-            "-----BEGIN PRIVATE KEY-----\nbad", "source"
-        )
+        incus_pki_mod._validate_private_key_pem("-----BEGIN PRIVATE KEY-----\nbad", "source")
 
 
 def test_cert_get_returns_valid_certificate(monkeypatch):
     storage = {"cert": "cert.crt", "key": "key.pem"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
-    monkeypatch.setattr(
-        incus_pki_mod, "_storage_read", Mock(return_value="certificate")
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
+    monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(return_value="certificate"))
     validate = Mock()
     monkeypatch.setattr(incus_pki_mod, "_validate_cert_pem", validate)
 
@@ -400,9 +370,7 @@ def test_cert_get_returns_valid_certificate(monkeypatch):
 
 def test_cert_get_reports_missing_certificate(monkeypatch):
     storage = {"cert": "cert.crt", "key": "key.pem"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
     monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(return_value=None))
 
     assert incus_pki_mod.cert_get() == {
@@ -430,12 +398,8 @@ def test_cert_get_reports_exception(monkeypatch):
 
 def test_key_get_returns_valid_key(monkeypatch):
     storage = {"cert": "cert.crt", "key": "key.pem"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
-    monkeypatch.setattr(
-        incus_pki_mod, "_storage_read", Mock(return_value="private-key")
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
+    monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(return_value="private-key"))
     validate = Mock()
     monkeypatch.setattr(incus_pki_mod, "_validate_private_key_pem", validate)
 
@@ -450,9 +414,7 @@ def test_key_get_returns_valid_key(monkeypatch):
 
 def test_key_get_reports_missing_key(monkeypatch):
     storage = {"cert": "cert.crt", "key": "key.pem"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
     monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(return_value=""))
 
     assert incus_pki_mod.key_get() == {
@@ -497,9 +459,7 @@ def test_cert_fingerprint_uses_explicit_certificate(monkeypatch):
 def test_cert_fingerprint_loads_certificate_from_storage(monkeypatch):
     cert_get = Mock(return_value={"success": True, "cert": "stored-certificate"})
     monkeypatch.setattr(incus_pki_mod, "cert_get", cert_get)
-    monkeypatch.setattr(
-        incus_pki_mod, "_fingerprint_from_cert", Mock(return_value="abc123")
-    )
+    monkeypatch.setattr(incus_pki_mod, "_fingerprint_from_cert", Mock(return_value="abc123"))
 
     result = incus_pki_mod.cert_fingerprint(storage={"cert": "cert", "key": "key"})
 
@@ -532,15 +492,9 @@ def test_cert_fingerprint_reports_exception(monkeypatch):
 
 def test_generate_keypair_skips_existing_pair(monkeypatch):
     storage = {"cert": "cert", "key": "key"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_generate", Mock(return_value=("client", 30))
-    )
-    monkeypatch.setattr(
-        incus_pki_mod, "_storage_read", Mock(side_effect=["cert", "key"])
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
+    monkeypatch.setattr(incus_pki_mod, "_normalize_generate", Mock(return_value=("client", 30)))
+    monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(side_effect=["cert", "key"]))
     generate = Mock()
     monkeypatch.setattr(incus_pki_mod, "_generate_keypair", generate)
 
@@ -563,25 +517,17 @@ def test_generate_keypair_skips_existing_pair(monkeypatch):
 )
 def test_generate_keypair_writes_new_pair(monkeypatch, existing, force):
     storage = {"cert": "cert", "key": "key"}
-    monkeypatch.setattr(
-        incus_pki_mod, "_normalize_storage", Mock(return_value=storage)
-    )
+    monkeypatch.setattr(incus_pki_mod, "_normalize_storage", Mock(return_value=storage))
     normalize_generate = Mock(return_value=("client", 30))
     monkeypatch.setattr(incus_pki_mod, "_normalize_generate", normalize_generate)
-    monkeypatch.setattr(
-        incus_pki_mod, "_storage_read", Mock(side_effect=list(existing))
-    )
+    monkeypatch.setattr(incus_pki_mod, "_storage_read", Mock(side_effect=list(existing)))
     generate = Mock(return_value=("new-cert", "new-key"))
     monkeypatch.setattr(incus_pki_mod, "_generate_keypair", generate)
     write = Mock()
     monkeypatch.setattr(incus_pki_mod, "_storage_write_pair", write)
-    monkeypatch.setattr(
-        incus_pki_mod, "_fingerprint_from_cert", Mock(return_value="abc123")
-    )
+    monkeypatch.setattr(incus_pki_mod, "_fingerprint_from_cert", Mock(return_value="abc123"))
 
-    assert incus_pki_mod.generate_keypair(
-        cn="client", days=30, storage=storage, force=force
-    ) == {
+    assert incus_pki_mod.generate_keypair(cn="client", days=30, storage=storage, force=force) == {
         "success": True,
         "changed": True,
         "comment": "TLS keypair generated and stored",

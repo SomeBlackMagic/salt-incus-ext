@@ -1,4 +1,6 @@
-from unittest.mock import Mock, call, mock_open
+from unittest.mock import Mock
+from unittest.mock import call
+from unittest.mock import mock_open
 
 import pytest
 
@@ -88,9 +90,7 @@ def test_basic_image_queries_return_api_errors(client, function, args):
     assert function(*args) == {"success": False, "error": "boom"}
 
 
-def test_image_create_from_file_waits_for_operation_and_adds_aliases(
-    client, monkeypatch
-):
+def test_image_create_from_file_waits_for_operation_and_adds_aliases(client, monkeypatch):
     response = Mock()
     response.json.return_value = {"type": "async", "operation": "/operations/1"}
     client.session.post.return_value = response
@@ -206,9 +206,7 @@ def test_image_create_from_file_reports_http_errors(client, monkeypatch):
         ),
     ],
 )
-def test_image_create_from_remote_validates_before_creating_client(
-    monkeypatch, kwargs, error
-):
+def test_image_create_from_remote_validates_before_creating_client(monkeypatch, kwargs, error):
     factory = Mock()
     monkeypatch.setattr(incus_image_mod, "_client", factory)
 
@@ -353,9 +351,7 @@ def test_image_set_public_updates_metadata(client):
     result = incus_image_mod.image_set_public("fp", public=False)
 
     assert result == {"success": True, "message": "Image fp set to private"}
-    client._sync_request.assert_called_once_with(
-        "PUT", "/images/fp", data={"public": False}
-    )
+    client._sync_request.assert_called_once_with("PUT", "/images/fp", data={"public": False})
 
 
 def test_image_update_changes_fields_and_synchronizes_aliases(client, monkeypatch):

@@ -16,7 +16,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Network Management Functions ==========
+
 
 def network_list(recursion=0):
     """
@@ -32,15 +34,15 @@ def network_list(recursion=0):
     :return: List of networks
     """
     client = _client()
-    result = client._request('GET', '/networks', params={'recursion': recursion})
+    result = client._request("GET", "/networks", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'networks': result.get('metadata', [])}
+    return {"success": True, "networks": result.get("metadata", [])}
 
 
-def network_create(name, network_type='bridge', config=None, description=''):
+def network_create(name, network_type="bridge", config=None, description=""):
     """
     Create a network
 
@@ -58,19 +60,14 @@ def network_create(name, network_type='bridge', config=None, description=''):
     """
     client = _client()
 
-    data = {
-        'name': name,
-        'type': network_type,
-        'config': config or {},
-        'description': description
-    }
+    data = {"name": name, "type": network_type, "config": config or {}, "description": description}
 
-    result = client._sync_request('POST', '/networks', data=data)
+    result = client._sync_request("POST", "/networks", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network {name} created successfully'}
+    return {"success": True, "message": f"Network {name} created successfully"}
 
 
 def network_get(name):
@@ -87,12 +84,12 @@ def network_get(name):
     :return: Network information
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(name)}')
+    result = client._request("GET", f"/networks/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'network': result.get('metadata', {})}
+    return {"success": True, "network": result.get("metadata", {})}
 
 
 def network_delete(name):
@@ -109,12 +106,12 @@ def network_delete(name):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/networks/{quote(name)}')
+    result = client._sync_request("DELETE", f"/networks/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network {name} deleted successfully'}
+    return {"success": True, "message": f"Network {name} deleted successfully"}
 
 
 def network_update(name, config):
@@ -134,19 +131,19 @@ def network_update(name, config):
     client = _client()
 
     # Get current network config
-    current = client._request('GET', f'/networks/{quote(name)}')
-    if 'error' in current:
-        return {'success': False, 'error': current['error']}
+    current = client._request("GET", f"/networks/{quote(name)}")
+    if "error" in current:
+        return {"success": False, "error": current["error"]}
 
-    network_data = current.get('metadata', {})
-    network_data['config'].update(config)
+    network_data = current.get("metadata", {})
+    network_data["config"].update(config)
 
-    result = client._sync_request('PUT', f'/networks/{quote(name)}', data=network_data)
+    result = client._sync_request("PUT", f"/networks/{quote(name)}", data=network_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network {name} updated successfully'}
+    return {"success": True, "message": f"Network {name} updated successfully"}
 
 
 def network_rename(name, new_name):
@@ -165,16 +162,14 @@ def network_rename(name, new_name):
     """
     client = _client()
 
-    data = {
-        'name': new_name
-    }
+    data = {"name": new_name}
 
-    result = client._sync_request('POST', f'/networks/{quote(name)}', data=data)
+    result = client._sync_request("POST", f"/networks/{quote(name)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network {name} renamed to {new_name} successfully'}
+    return {"success": True, "message": f"Network {name} renamed to {new_name} successfully"}
 
 
 def network_state(name):
@@ -191,12 +186,12 @@ def network_state(name):
     :return: Network state information
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(name)}/state')
+    result = client._request("GET", f"/networks/{quote(name)}/state")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'state': result.get('metadata', {})}
+    return {"success": True, "state": result.get("metadata", {})}
 
 
 def network_lease_list(name):
@@ -213,15 +208,16 @@ def network_lease_list(name):
     :return: List of DHCP leases
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(name)}/leases')
+    result = client._request("GET", f"/networks/{quote(name)}/leases")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'leases': result.get('metadata', [])}
+    return {"success": True, "leases": result.get("metadata", [])}
 
 
 # ========== Network ACL Management Functions ==========
+
 
 def network_acl_list(recursion=0):
     """
@@ -238,12 +234,12 @@ def network_acl_list(recursion=0):
     :return: List of network ACLs
     """
     client = _client()
-    result = client._request('GET', '/network-acls', params={'recursion': recursion})
+    result = client._request("GET", "/network-acls", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'acls': result.get('metadata', [])}
+    return {"success": True, "acls": result.get("metadata", [])}
 
 
 def network_acl_get(name):
@@ -260,15 +256,15 @@ def network_acl_get(name):
     :return: ACL information
     """
     client = _client()
-    result = client._request('GET', f'/network-acls/{quote(name)}')
+    result = client._request("GET", f"/network-acls/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'acl': result.get('metadata', {})}
+    return {"success": True, "acl": result.get("metadata", {})}
 
 
-def network_acl_create(name, config=None, description='', egress=None, ingress=None):
+def network_acl_create(name, config=None, description="", egress=None, ingress=None):
     """
     Create a network ACL
 
@@ -289,19 +285,19 @@ def network_acl_create(name, config=None, description='', egress=None, ingress=N
     client = _client()
 
     data = {
-        'name': name,
-        'config': config or {},
-        'description': description,
-        'egress': egress or [],
-        'ingress': ingress or []
+        "name": name,
+        "config": config or {},
+        "description": description,
+        "egress": egress or [],
+        "ingress": ingress or [],
     }
 
-    result = client._sync_request('POST', '/network-acls', data=data)
+    result = client._sync_request("POST", "/network-acls", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network ACL {name} created successfully'}
+    return {"success": True, "message": f"Network ACL {name} created successfully"}
 
 
 def network_acl_update(name, config=None, description=None, egress=None, ingress=None):
@@ -325,29 +321,29 @@ def network_acl_update(name, config=None, description=None, egress=None, ingress
 
     # Get current ACL config
     current = network_acl_get(name)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    acl_data = current['acl']
+    acl_data = current["acl"]
 
     if config:
-        acl_data['config'].update(config)
+        acl_data["config"].update(config)
 
     if description is not None:
-        acl_data['description'] = description
+        acl_data["description"] = description
 
     if egress is not None:
-        acl_data['egress'] = egress
+        acl_data["egress"] = egress
 
     if ingress is not None:
-        acl_data['ingress'] = ingress
+        acl_data["ingress"] = ingress
 
-    result = client._sync_request('PUT', f'/network-acls/{quote(name)}', data=acl_data)
+    result = client._sync_request("PUT", f"/network-acls/{quote(name)}", data=acl_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network ACL {name} updated successfully'}
+    return {"success": True, "message": f"Network ACL {name} updated successfully"}
 
 
 def network_acl_delete(name):
@@ -364,12 +360,12 @@ def network_acl_delete(name):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/network-acls/{quote(name)}')
+    result = client._sync_request("DELETE", f"/network-acls/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network ACL {name} deleted successfully'}
+    return {"success": True, "message": f"Network ACL {name} deleted successfully"}
 
 
 def network_acl_rename(name, new_name):
@@ -388,19 +384,18 @@ def network_acl_rename(name, new_name):
     """
     client = _client()
 
-    data = {
-        'name': new_name
-    }
+    data = {"name": new_name}
 
-    result = client._sync_request('POST', f'/network-acls/{quote(name)}', data=data)
+    result = client._sync_request("POST", f"/network-acls/{quote(name)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network ACL {name} renamed to {new_name} successfully'}
+    return {"success": True, "message": f"Network ACL {name} renamed to {new_name} successfully"}
 
 
 # ========== Network Forward Management Functions ==========
+
 
 def network_forward_list(network, recursion=0):
     """
@@ -417,13 +412,14 @@ def network_forward_list(network, recursion=0):
     :return: List of forwards
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(network)}/forwards',
-                            params={'recursion': recursion})
+    result = client._request(
+        "GET", f"/networks/{quote(network)}/forwards", params={"recursion": recursion}
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'forwards': result.get('metadata', [])}
+    return {"success": True, "forwards": result.get("metadata", [])}
 
 
 def network_forward_get(network, listen_address):
@@ -441,15 +437,15 @@ def network_forward_get(network, listen_address):
     :return: Forward information
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(network)}/forwards/{quote(listen_address)}')
+    result = client._request("GET", f"/networks/{quote(network)}/forwards/{quote(listen_address)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'forward': result.get('metadata', {})}
+    return {"success": True, "forward": result.get("metadata", {})}
 
 
-def network_forward_create(network, listen_address, config=None, description='', ports=None):
+def network_forward_create(network, listen_address, config=None, description="", ports=None):
     """
     Create a network forward
 
@@ -469,18 +465,18 @@ def network_forward_create(network, listen_address, config=None, description='',
     client = _client()
 
     data = {
-        'listen_address': listen_address,
-        'config': config or {},
-        'description': description,
-        'ports': ports or []
+        "listen_address": listen_address,
+        "config": config or {},
+        "description": description,
+        "ports": ports or [],
     }
 
-    result = client._sync_request('POST', f'/networks/{quote(network)}/forwards', data=data)
+    result = client._sync_request("POST", f"/networks/{quote(network)}/forwards", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network forward {listen_address} created successfully'}
+    return {"success": True, "message": f"Network forward {listen_address} created successfully"}
 
 
 def network_forward_update(network, listen_address, config=None, description=None, ports=None):
@@ -504,27 +500,28 @@ def network_forward_update(network, listen_address, config=None, description=Non
 
     # Get current forward config
     current = network_forward_get(network, listen_address)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    forward_data = current['forward']
+    forward_data = current["forward"]
 
     if config:
-        forward_data['config'].update(config)
+        forward_data["config"].update(config)
 
     if description is not None:
-        forward_data['description'] = description
+        forward_data["description"] = description
 
     if ports is not None:
-        forward_data['ports'] = ports
+        forward_data["ports"] = ports
 
-    result = client._sync_request('PUT', f'/networks/{quote(network)}/forwards/{quote(listen_address)}',
-                                  data=forward_data)
+    result = client._sync_request(
+        "PUT", f"/networks/{quote(network)}/forwards/{quote(listen_address)}", data=forward_data
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network forward {listen_address} updated successfully'}
+    return {"success": True, "message": f"Network forward {listen_address} updated successfully"}
 
 
 def network_forward_delete(network, listen_address):
@@ -542,15 +539,18 @@ def network_forward_delete(network, listen_address):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/networks/{quote(network)}/forwards/{quote(listen_address)}')
+    result = client._sync_request(
+        "DELETE", f"/networks/{quote(network)}/forwards/{quote(listen_address)}"
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network forward {listen_address} deleted successfully'}
+    return {"success": True, "message": f"Network forward {listen_address} deleted successfully"}
 
 
 # ========== Network Peer Management Functions ==========
+
 
 def network_peer_list(network, recursion=0):
     """
@@ -567,13 +567,14 @@ def network_peer_list(network, recursion=0):
     :return: List of peers
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(network)}/peers',
-                            params={'recursion': recursion})
+    result = client._request(
+        "GET", f"/networks/{quote(network)}/peers", params={"recursion": recursion}
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'peers': result.get('metadata', [])}
+    return {"success": True, "peers": result.get("metadata", [])}
 
 
 def network_peer_get(network, peer_name):
@@ -591,15 +592,17 @@ def network_peer_get(network, peer_name):
     :return: Peer information
     """
     client = _client()
-    result = client._request('GET', f'/networks/{quote(network)}/peers/{quote(peer_name)}')
+    result = client._request("GET", f"/networks/{quote(network)}/peers/{quote(peer_name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'peer': result.get('metadata', {})}
+    return {"success": True, "peer": result.get("metadata", {})}
 
 
-def network_peer_create(network, peer_name, config=None, description='', target_network=None, target_project=None):
+def network_peer_create(
+    network, peer_name, config=None, description="", target_network=None, target_project=None
+):
     """
     Create a network peer
 
@@ -619,27 +622,25 @@ def network_peer_create(network, peer_name, config=None, description='', target_
     """
     client = _client()
 
-    data = {
-        'name': peer_name,
-        'config': config or {},
-        'description': description
-    }
+    data = {"name": peer_name, "config": config or {}, "description": description}
 
     if target_network:
-        data['target_network'] = target_network
+        data["target_network"] = target_network
 
     if target_project:
-        data['target_project'] = target_project
+        data["target_project"] = target_project
 
-    result = client._sync_request('POST', f'/networks/{quote(network)}/peers', data=data)
+    result = client._sync_request("POST", f"/networks/{quote(network)}/peers", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network peer {peer_name} created successfully'}
+    return {"success": True, "message": f"Network peer {peer_name} created successfully"}
 
 
-def network_peer_update(network, peer_name, config=None, description=None, target_network=None, target_project=None):
+def network_peer_update(
+    network, peer_name, config=None, description=None, target_network=None, target_project=None
+):
     """
     Update network peer
 
@@ -661,30 +662,31 @@ def network_peer_update(network, peer_name, config=None, description=None, targe
 
     # Get current peer config
     current = network_peer_get(network, peer_name)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    peer_data = current['peer']
+    peer_data = current["peer"]
 
     if config:
-        peer_data['config'].update(config)
+        peer_data["config"].update(config)
 
     if description is not None:
-        peer_data['description'] = description
+        peer_data["description"] = description
 
     if target_network is not None:
-        peer_data['target_network'] = target_network
+        peer_data["target_network"] = target_network
 
     if target_project is not None:
-        peer_data['target_project'] = target_project
+        peer_data["target_project"] = target_project
 
-    result = client._sync_request('PUT', f'/networks/{quote(network)}/peers/{quote(peer_name)}',
-                                  data=peer_data)
+    result = client._sync_request(
+        "PUT", f"/networks/{quote(network)}/peers/{quote(peer_name)}", data=peer_data
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network peer {peer_name} updated successfully'}
+    return {"success": True, "message": f"Network peer {peer_name} updated successfully"}
 
 
 def network_peer_delete(network, peer_name):
@@ -702,15 +704,16 @@ def network_peer_delete(network, peer_name):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/networks/{quote(network)}/peers/{quote(peer_name)}')
+    result = client._sync_request("DELETE", f"/networks/{quote(network)}/peers/{quote(peer_name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network peer {peer_name} deleted successfully'}
+    return {"success": True, "message": f"Network peer {peer_name} deleted successfully"}
 
 
 # ========== Network Zone Management Functions ==========
+
 
 def network_zone_list(recursion=0):
     """
@@ -727,12 +730,12 @@ def network_zone_list(recursion=0):
     :return: List of network zones
     """
     client = _client()
-    result = client._request('GET', '/network-zones', params={'recursion': recursion})
+    result = client._request("GET", "/network-zones", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'zones': result.get('metadata', [])}
+    return {"success": True, "zones": result.get("metadata", [])}
 
 
 def network_zone_get(zone):
@@ -749,15 +752,15 @@ def network_zone_get(zone):
     :return: Zone information
     """
     client = _client()
-    result = client._request('GET', f'/network-zones/{quote(zone)}')
+    result = client._request("GET", f"/network-zones/{quote(zone)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'zone': result.get('metadata', {})}
+    return {"success": True, "zone": result.get("metadata", {})}
 
 
-def network_zone_create(zone, config=None, description=''):
+def network_zone_create(zone, config=None, description=""):
     """
     Create a network zone
 
@@ -775,18 +778,14 @@ def network_zone_create(zone, config=None, description=''):
     """
     client = _client()
 
-    data = {
-        'name': zone,
-        'config': config or {},
-        'description': description
-    }
+    data = {"name": zone, "config": config or {}, "description": description}
 
-    result = client._sync_request('POST', '/network-zones', data=data)
+    result = client._sync_request("POST", "/network-zones", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone {zone} created successfully'}
+    return {"success": True, "message": f"Network zone {zone} created successfully"}
 
 
 def network_zone_update(zone, config=None, description=None):
@@ -808,23 +807,23 @@ def network_zone_update(zone, config=None, description=None):
 
     # Get current zone config
     current = network_zone_get(zone)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    zone_data = current['zone']
+    zone_data = current["zone"]
 
     if config:
-        zone_data['config'].update(config)
+        zone_data["config"].update(config)
 
     if description is not None:
-        zone_data['description'] = description
+        zone_data["description"] = description
 
-    result = client._sync_request('PUT', f'/network-zones/{quote(zone)}', data=zone_data)
+    result = client._sync_request("PUT", f"/network-zones/{quote(zone)}", data=zone_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone {zone} updated successfully'}
+    return {"success": True, "message": f"Network zone {zone} updated successfully"}
 
 
 def network_zone_delete(zone):
@@ -841,15 +840,16 @@ def network_zone_delete(zone):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/network-zones/{quote(zone)}')
+    result = client._sync_request("DELETE", f"/network-zones/{quote(zone)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone {zone} deleted successfully'}
+    return {"success": True, "message": f"Network zone {zone} deleted successfully"}
 
 
 # ========== Network Zone Record Management Functions ==========
+
 
 def network_zone_record_list(zone, recursion=0):
     """
@@ -866,13 +866,14 @@ def network_zone_record_list(zone, recursion=0):
     :return: List of zone records
     """
     client = _client()
-    result = client._request('GET', f'/network-zones/{quote(zone)}/records',
-                            params={'recursion': recursion})
+    result = client._request(
+        "GET", f"/network-zones/{quote(zone)}/records", params={"recursion": recursion}
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'records': result.get('metadata', [])}
+    return {"success": True, "records": result.get("metadata", [])}
 
 
 def network_zone_record_get(zone, record_name):
@@ -890,15 +891,15 @@ def network_zone_record_get(zone, record_name):
     :return: Record information
     """
     client = _client()
-    result = client._request('GET', f'/network-zones/{quote(zone)}/records/{quote(record_name)}')
+    result = client._request("GET", f"/network-zones/{quote(zone)}/records/{quote(record_name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'record': result.get('metadata', {})}
+    return {"success": True, "record": result.get("metadata", {})}
 
 
-def network_zone_record_create(zone, record_name, config=None, description='', entries=None):
+def network_zone_record_create(zone, record_name, config=None, description="", entries=None):
     """
     Create a network zone record
 
@@ -918,18 +919,18 @@ def network_zone_record_create(zone, record_name, config=None, description='', e
     client = _client()
 
     data = {
-        'name': record_name,
-        'config': config or {},
-        'description': description,
-        'entries': entries or []
+        "name": record_name,
+        "config": config or {},
+        "description": description,
+        "entries": entries or [],
     }
 
-    result = client._sync_request('POST', f'/network-zones/{quote(zone)}/records', data=data)
+    result = client._sync_request("POST", f"/network-zones/{quote(zone)}/records", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone record {record_name} created successfully'}
+    return {"success": True, "message": f"Network zone record {record_name} created successfully"}
 
 
 def network_zone_record_update(zone, record_name, config=None, description=None, entries=None):
@@ -953,27 +954,28 @@ def network_zone_record_update(zone, record_name, config=None, description=None,
 
     # Get current record config
     current = network_zone_record_get(zone, record_name)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    record_data = current['record']
+    record_data = current["record"]
 
     if config:
-        record_data['config'].update(config)
+        record_data["config"].update(config)
 
     if description is not None:
-        record_data['description'] = description
+        record_data["description"] = description
 
     if entries is not None:
-        record_data['entries'] = entries
+        record_data["entries"] = entries
 
-    result = client._sync_request('PUT', f'/network-zones/{quote(zone)}/records/{quote(record_name)}',
-                                  data=record_data)
+    result = client._sync_request(
+        "PUT", f"/network-zones/{quote(zone)}/records/{quote(record_name)}", data=record_data
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone record {record_name} updated successfully'}
+    return {"success": True, "message": f"Network zone record {record_name} updated successfully"}
 
 
 def network_zone_record_delete(zone, record_name):
@@ -991,47 +993,49 @@ def network_zone_record_delete(zone, record_name):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/network-zones/{quote(zone)}/records/{quote(record_name)}')
+    result = client._sync_request(
+        "DELETE", f"/network-zones/{quote(zone)}/records/{quote(record_name)}"
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Network zone record {record_name} deleted successfully'}
+    return {"success": True, "message": f"Network zone record {record_name} deleted successfully"}
 
 
 __all__ = [
-    'network_list',
-    'network_create',
-    'network_get',
-    'network_delete',
-    'network_update',
-    'network_rename',
-    'network_state',
-    'network_lease_list',
-    'network_acl_list',
-    'network_acl_get',
-    'network_acl_create',
-    'network_acl_update',
-    'network_acl_delete',
-    'network_acl_rename',
-    'network_forward_list',
-    'network_forward_get',
-    'network_forward_create',
-    'network_forward_update',
-    'network_forward_delete',
-    'network_peer_list',
-    'network_peer_get',
-    'network_peer_create',
-    'network_peer_update',
-    'network_peer_delete',
-    'network_zone_list',
-    'network_zone_get',
-    'network_zone_create',
-    'network_zone_update',
-    'network_zone_delete',
-    'network_zone_record_list',
-    'network_zone_record_get',
-    'network_zone_record_create',
-    'network_zone_record_update',
-    'network_zone_record_delete',
+    "network_list",
+    "network_create",
+    "network_get",
+    "network_delete",
+    "network_update",
+    "network_rename",
+    "network_state",
+    "network_lease_list",
+    "network_acl_list",
+    "network_acl_get",
+    "network_acl_create",
+    "network_acl_update",
+    "network_acl_delete",
+    "network_acl_rename",
+    "network_forward_list",
+    "network_forward_get",
+    "network_forward_create",
+    "network_forward_update",
+    "network_forward_delete",
+    "network_peer_list",
+    "network_peer_get",
+    "network_peer_create",
+    "network_peer_update",
+    "network_peer_delete",
+    "network_zone_list",
+    "network_zone_get",
+    "network_zone_create",
+    "network_zone_update",
+    "network_zone_delete",
+    "network_zone_record_list",
+    "network_zone_record_get",
+    "network_zone_record_create",
+    "network_zone_record_update",
+    "network_zone_record_delete",
 ]

@@ -20,7 +20,9 @@ def _client():
 
     return IncusClient(salt_funcs=__salt__)
 
+
 # ========== Instance Management Functions ==========
+
 
 def instance_list(recursion=0):
     """
@@ -37,12 +39,12 @@ def instance_list(recursion=0):
     :return: List of instances
     """
     client = _client()
-    result = client._request('GET', '/instances', params={'recursion': recursion})
+    result = client._request("GET", "/instances", params={"recursion": recursion})
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'instances': result.get('metadata', [])}
+    return {"success": True, "instances": result.get("metadata", [])}
 
 
 def instance_get(name):
@@ -59,15 +61,23 @@ def instance_get(name):
     :return: Instance information
     """
     client = _client()
-    result = client._request('GET', f'/instances/{quote(name)}')
+    result = client._request("GET", f"/instances/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'instance': result.get('metadata', {})}
+    return {"success": True, "instance": result.get("metadata", {})}
 
 
-def instance_create(name, source=None, instance_type='container', config=None, devices=None, profiles=None, ephemeral=False):
+def instance_create(
+    name,
+    source=None,
+    instance_type="container",
+    config=None,
+    devices=None,
+    profiles=None,
+    ephemeral=False,
+):
     """
     Create a new instance
 
@@ -89,30 +99,26 @@ def instance_create(name, source=None, instance_type='container', config=None, d
     """
     client = _client()
 
-    data = {
-        'name': name,
-        'type': instance_type,
-        'ephemeral': ephemeral
-    }
+    data = {"name": name, "type": instance_type, "ephemeral": ephemeral}
 
     if source:
-        data['source'] = source
+        data["source"] = source
 
     if config:
-        data['config'] = config
+        data["config"] = config
 
     if devices:
-        data['devices'] = devices
+        data["devices"] = devices
 
     if profiles:
-        data['profiles'] = profiles
+        data["profiles"] = profiles
 
-    result = client._sync_request('POST', '/instances', data=data)
+    result = client._sync_request("POST", "/instances", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} created successfully'}
+    return {"success": True, "message": f"Instance {name} created successfully"}
 
 
 def instance_delete(name, force=False):
@@ -135,15 +141,18 @@ def instance_delete(name, force=False):
     # Stop instance if running and force is True
     if force:
         instance_info = instance_get(name)
-        if instance_info.get('success') and instance_info.get('instance', {}).get('status') == 'Running':
+        if (
+            instance_info.get("success")
+            and instance_info.get("instance", {}).get("status") == "Running"
+        ):
             instance_stop(name, force=True)
 
-    result = client._sync_request('DELETE', f'/instances/{quote(name)}')
+    result = client._sync_request("DELETE", f"/instances/{quote(name)}")
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} deleted successfully'}
+    return {"success": True, "message": f"Instance {name} deleted successfully"}
 
 
 def instance_update(name, config=None, devices=None, profiles=None):
@@ -166,34 +175,34 @@ def instance_update(name, config=None, devices=None, profiles=None):
 
     # Get current instance config
     current = instance_get(name)
-    if not current.get('success'):
+    if not current.get("success"):
         return current
 
-    instance_data = current['instance']
+    instance_data = current["instance"]
 
     # Update fields
     if config:
-        instance_data['config'].update(config)
+        instance_data["config"].update(config)
 
     if devices:
         # Deep merge devices: update properties within existing devices
         for dev_name, dev_conf in devices.items():
-            if dev_name in instance_data['devices']:
+            if dev_name in instance_data["devices"]:
                 # Device exists, merge properties
-                instance_data['devices'][dev_name].update(dev_conf)
+                instance_data["devices"][dev_name].update(dev_conf)
             else:
                 # New device, add it
-                instance_data['devices'][dev_name] = dev_conf
+                instance_data["devices"][dev_name] = dev_conf
 
     if profiles is not None:
-        instance_data['profiles'] = profiles
+        instance_data["profiles"] = profiles
 
-    result = client._sync_request('PUT', f'/instances/{quote(name)}', data=instance_data)
+    result = client._sync_request("PUT", f"/instances/{quote(name)}", data=instance_data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} updated successfully'}
+    return {"success": True, "message": f"Instance {name} updated successfully"}
 
 
 def instance_start(name, force=False, stateful=False):
@@ -213,18 +222,14 @@ def instance_start(name, force=False, stateful=False):
     """
     client = _client()
 
-    data = {
-        'action': 'start',
-        'force': force,
-        'stateful': stateful
-    }
+    data = {"action": "start", "force": force, "stateful": stateful}
 
-    result = client._sync_request('PUT', f'/instances/{quote(name)}/state', data=data)
+    result = client._sync_request("PUT", f"/instances/{quote(name)}/state", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} started successfully'}
+    return {"success": True, "message": f"Instance {name} started successfully"}
 
 
 def instance_stop(name, force=False, stateful=False, timeout=30):
@@ -246,19 +251,14 @@ def instance_stop(name, force=False, stateful=False, timeout=30):
     """
     client = _client()
 
-    data = {
-        'action': 'stop',
-        'force': force,
-        'stateful': stateful,
-        'timeout': timeout
-    }
+    data = {"action": "stop", "force": force, "stateful": stateful, "timeout": timeout}
 
-    result = client._sync_request('PUT', f'/instances/{quote(name)}/state', data=data)
+    result = client._sync_request("PUT", f"/instances/{quote(name)}/state", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} stopped successfully'}
+    return {"success": True, "message": f"Instance {name} stopped successfully"}
 
 
 def instance_restart(name, force=False, timeout=30):
@@ -278,18 +278,14 @@ def instance_restart(name, force=False, timeout=30):
     """
     client = _client()
 
-    data = {
-        'action': 'restart',
-        'force': force,
-        'timeout': timeout
-    }
+    data = {"action": "restart", "force": force, "timeout": timeout}
 
-    result = client._sync_request('PUT', f'/instances/{quote(name)}/state', data=data)
+    result = client._sync_request("PUT", f"/instances/{quote(name)}/state", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {name} restarted successfully'}
+    return {"success": True, "message": f"Instance {name} restarted successfully"}
 
 
 def instance_wait_ready(name, timeout=300, interval=2):
@@ -315,26 +311,22 @@ def instance_wait_ready(name, timeout=300, interval=2):
 
     while time.time() - started < timeout:
         # Try to execute a simple command to check if incus-agent is ready
-        data = {
-            'command': ['/bin/true'],
-            'wait-for-websocket': False,
-            'interactive': False
-        }
+        data = {"command": ["/bin/true"], "wait-for-websocket": False, "interactive": False}
 
-        result = client._sync_request('POST', f'/instances/{quote(name)}/exec', data=data)
+        result = client._sync_request("POST", f"/instances/{quote(name)}/exec", data=data)
 
         # If exec succeeds, the agent is ready
-        if result.get('error_code') == 0:
+        if result.get("error_code") == 0:
             elapsed = time.time() - started
             log.info(f"Instance '{name}' is ready after {elapsed:.1f}s")
             return {
-                'success': True,
-                'message': f'Instance {name} is ready',
-                'elapsed_time': elapsed
+                "success": True,
+                "message": f"Instance {name} is ready",
+                "elapsed_time": elapsed,
             }
 
         # Log the error for debugging
-        error_msg = result.get('error', 'Unknown error')
+        error_msg = result.get("error", "Unknown error")
         log.debug(f"Instance '{name}' not ready yet: {error_msg}")
 
         # Wait before next check
@@ -344,12 +336,13 @@ def instance_wait_ready(name, timeout=300, interval=2):
     elapsed = time.time() - started
     log.warning(f"Timeout waiting for instance '{name}' to become ready ({elapsed:.1f}s)")
     return {
-        'success': False,
-        'error': f'Timeout waiting for instance to become ready after {elapsed:.1f}s'
+        "success": False,
+        "error": f"Timeout waiting for instance to become ready after {elapsed:.1f}s",
     }
 
 
 # ========== Instance Snapshot Management Functions ==========
+
 
 def instance_snapshot_list(instance, recursion=0):
     """
@@ -367,13 +360,14 @@ def instance_snapshot_list(instance, recursion=0):
     :return: List of snapshots
     """
     client = _client()
-    result = client._request('GET', f'/instances/{quote(instance)}/snapshots',
-                            params={'recursion': recursion})
+    result = client._request(
+        "GET", f"/instances/{quote(instance)}/snapshots", params={"recursion": recursion}
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'snapshots': result.get('metadata', [])}
+    return {"success": True, "snapshots": result.get("metadata", [])}
 
 
 def instance_snapshot_get(instance, snapshot_name):
@@ -391,15 +385,17 @@ def instance_snapshot_get(instance, snapshot_name):
     :return: Snapshot information
     """
     client = _client()
-    result = client._request('GET', f'/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}')
+    result = client._request(
+        "GET", f"/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}"
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'snapshot': result.get('metadata', {})}
+    return {"success": True, "snapshot": result.get("metadata", {})}
 
 
-def instance_snapshot_create(instance, snapshot_name, stateful=False, description=''):
+def instance_snapshot_create(instance, snapshot_name, stateful=False, description=""):
     """
     Create a snapshot of an instance
 
@@ -436,20 +432,20 @@ def instance_snapshot_create(instance, snapshot_name, stateful=False, descriptio
     """
     client = _client()
 
-    data = {
-        'name': snapshot_name,
-        'stateful': stateful
-    }
+    data = {"name": snapshot_name, "stateful": stateful}
 
     if description:
-        data['description'] = description
+        data["description"] = description
 
-    result = client._sync_request('POST', f'/instances/{quote(instance)}/snapshots', data=data)
+    result = client._sync_request("POST", f"/instances/{quote(instance)}/snapshots", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Snapshot {snapshot_name} of instance {instance} created successfully'}
+    return {
+        "success": True,
+        "message": f"Snapshot {snapshot_name} of instance {instance} created successfully",
+    }
 
 
 def instance_snapshot_rename(instance, snapshot_name, new_name):
@@ -469,17 +465,19 @@ def instance_snapshot_rename(instance, snapshot_name, new_name):
     """
     client = _client()
 
-    data = {
-        'name': new_name
+    data = {"name": new_name}
+
+    result = client._sync_request(
+        "POST", f"/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}", data=data
+    )
+
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
+
+    return {
+        "success": True,
+        "message": f"Snapshot {snapshot_name} renamed to {new_name} successfully",
     }
-
-    result = client._sync_request('POST', f'/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}',
-                                  data=data)
-
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
-
-    return {'success': True, 'message': f'Snapshot {snapshot_name} renamed to {new_name} successfully'}
 
 
 def instance_snapshot_restore(instance, snapshot_name, stateful=None):
@@ -503,19 +501,20 @@ def instance_snapshot_restore(instance, snapshot_name, stateful=None):
     """
     client = _client()
 
-    data = {
-        'restore': snapshot_name
-    }
+    data = {"restore": snapshot_name}
 
     if stateful is not None:
-        data['stateful'] = stateful
+        data["stateful"] = stateful
 
-    result = client._sync_request('PUT', f'/instances/{quote(instance)}', data=data)
+    result = client._sync_request("PUT", f"/instances/{quote(instance)}", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Instance {instance} restored from snapshot {snapshot_name} successfully'}
+    return {
+        "success": True,
+        "message": f"Instance {instance} restored from snapshot {snapshot_name} successfully",
+    }
 
 
 def instance_snapshot_delete(instance, snapshot_name):
@@ -533,12 +532,17 @@ def instance_snapshot_delete(instance, snapshot_name):
     :return: Result
     """
     client = _client()
-    result = client._sync_request('DELETE', f'/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}')
+    result = client._sync_request(
+        "DELETE", f"/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}"
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Snapshot {snapshot_name} of instance {instance} deleted successfully'}
+    return {
+        "success": True,
+        "message": f"Snapshot {snapshot_name} of instance {instance} deleted successfully",
+    }
 
 
 def instance_snapshot_update(instance, snapshot_name, description=None, expires_at=None):
@@ -561,26 +565,29 @@ def instance_snapshot_update(instance, snapshot_name, description=None, expires_
     client = _client()
 
     # Get current snapshot config
-    current = client._request('GET', f'/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}')
-    if current.get('error_code') != 0:
-        return {'success': False, 'error': current.get('error', 'Failed to get snapshot')}
+    current = client._request(
+        "GET", f"/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}"
+    )
+    if current.get("error_code") != 0:
+        return {"success": False, "error": current.get("error", "Failed to get snapshot")}
 
-    snapshot_data = current.get('metadata', {})
+    snapshot_data = current.get("metadata", {})
 
     # Update fields
     if description is not None:
-        snapshot_data['description'] = description
+        snapshot_data["description"] = description
 
     if expires_at is not None:
-        snapshot_data['expires_at'] = expires_at
+        snapshot_data["expires_at"] = expires_at
 
-    result = client._sync_request('PUT', f'/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}',
-                                  data=snapshot_data)
+    result = client._sync_request(
+        "PUT", f"/instances/{quote(instance)}/snapshots/{quote(snapshot_name)}", data=snapshot_data
+    )
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
-    return {'success': True, 'message': f'Snapshot {snapshot_name} updated successfully'}
+    return {"success": True, "message": f"Snapshot {snapshot_name} updated successfully"}
 
 
 def instance_snapshot_publish(instance, snapshot_name, properties=None, public=False, aliases=None):
@@ -607,37 +614,32 @@ def instance_snapshot_publish(instance, snapshot_name, properties=None, public=F
     """
     client = _client()
 
-    data = {
-        'public': public,
-        'source': {
-            'type': 'snapshot',
-            'name': f'{instance}/{snapshot_name}'
-        }
-    }
+    data = {"public": public, "source": {"type": "snapshot", "name": f"{instance}/{snapshot_name}"}}
 
     if properties:
-        data['properties'] = properties
+        data["properties"] = properties
 
     if aliases:
-        data['aliases'] = [{'name': a} if isinstance(a, str) else a for a in aliases]
+        data["aliases"] = [{"name": a} if isinstance(a, str) else a for a in aliases]
 
-    result = client._sync_request('POST', '/images', data=data)
+    result = client._sync_request("POST", "/images", data=data)
 
-    if result.get('error_code') != 0:
-        return {'success': False, 'error': result['error']}
+    if result.get("error_code") != 0:
+        return {"success": False, "error": result["error"]}
 
     # Extract fingerprint from result
-    metadata = result.get('metadata', {})
-    fingerprint = metadata.get('fingerprint', 'unknown')
+    metadata = result.get("metadata", {})
+    fingerprint = metadata.get("fingerprint", "unknown")
 
     return {
-        'success': True,
-        'message': f'Snapshot {snapshot_name} published as image successfully',
-        'fingerprint': fingerprint
+        "success": True,
+        "message": f"Snapshot {snapshot_name} published as image successfully",
+        "fingerprint": fingerprint,
     }
 
 
 # ========== Cloud-init Status Functions ==========
+
 
 def instance_check_cloudinit_enabled(name):
     """
@@ -659,34 +661,31 @@ def instance_check_cloudinit_enabled(name):
 
     # Try to execute cloud-init --version command
     data = {
-        'command': ['cloud-init', '--version'],
-        'wait-for-websocket': False,
-        'interactive': False,
-        'environment': {}
+        "command": ["cloud-init", "--version"],
+        "wait-for-websocket": False,
+        "interactive": False,
+        "environment": {},
     }
 
     try:
-        result = client._sync_request('POST', f'/instances/{quote(name)}/exec', data=data)
+        result = client._sync_request("POST", f"/instances/{quote(name)}/exec", data=data)
 
         # If command succeeds (exit code 0), cloud-init is installed
-        if result.get('error_code') == 0:
+        if result.get("error_code") == 0:
             return {
-                'success': True,
-                'enabled': True,
-                'message': 'cloud-init is installed and available'
+                "success": True,
+                "enabled": True,
+                "message": "cloud-init is installed and available",
             }
         else:
             # Command failed, cloud-init is not available
             return {
-                'success': True,
-                'enabled': False,
-                'message': 'cloud-init is not installed or not available'
+                "success": True,
+                "enabled": False,
+                "message": "cloud-init is not installed or not available",
             }
-    except Exception as e:
-        return {
-            'success': False,
-            'error': f'Failed to check cloud-init status: {str(e)}'
-        }
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        return {"success": False, "error": f"Failed to check cloud-init status: {str(e)}"}
 
 
 def _check_cloudinit_boot_finished(client, name):
@@ -699,35 +698,41 @@ def _check_cloudinit_boot_finished(client, name):
     """
     try:
         check_data = {
-            'command': ['test', '-f', '/var/lib/cloud/instance/boot-finished'],
-            'wait-for-websocket': False,
-            'interactive': False,
-            'environment': {}
+            "command": ["test", "-f", "/var/lib/cloud/instance/boot-finished"],
+            "wait-for-websocket": False,
+            "interactive": False,
+            "environment": {},
         }
 
-        check_result = client._sync_request('POST', f'/instances/{quote(name)}/exec', data=check_data)
+        check_result = client._sync_request(
+            "POST", f"/instances/{quote(name)}/exec", data=check_data
+        )
 
         # DEBUG: Log API response
-        log.debug(f"API error_code={check_result.get('error_code')}, metadata_present={check_result.get('metadata') is not None}")
+        log.debug(
+            f"API error_code={check_result.get('error_code')}, metadata_present={check_result.get('metadata') is not None}"
+        )
 
-        if check_result.get('error_code') != 0:
+        if check_result.get("error_code") != 0:
             error_msg = f"Failed to check cloud-init marker: {check_result.get('error')}"
             log.debug(f"Failed to check cloud-init marker on '{name}': {check_result.get('error')}")
             return (False, error_msg)
 
         # Get the return code from metadata
         # Note: Incus API returns nested structure: result['metadata']['metadata']['return']
-        metadata = check_result.get('metadata', {})
-        inner_metadata = metadata.get('metadata', {})
-        return_code = inner_metadata.get('return', -1)
+        metadata = check_result.get("metadata", {})
+        inner_metadata = metadata.get("metadata", {})
+        return_code = inner_metadata.get("return", -1)
 
         # DEBUG: Log metadata details
-        log.debug(f"return_code={return_code}, inner_metadata_keys={list(inner_metadata.keys()) if inner_metadata else []}")
+        log.debug(
+            f"return_code={return_code}, inner_metadata_keys={list(inner_metadata.keys()) if inner_metadata else []}"
+        )
 
         # Return code 0 means file exists (cloud-init completed)
         return (return_code == 0, None)
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         log.debug(f"Exception while checking cloud-init status on '{name}': {str(e)}")
         return (False, str(e))
 
@@ -752,16 +757,9 @@ def instance_get_cloudinit_status(name):
     completed, error = _check_cloudinit_boot_finished(client, name)
 
     if error:
-        return {
-            'success': False,
-            'error': error
-        }
+        return {"success": False, "error": error}
 
-    return {
-        'success': True,
-        'completed': completed,
-        'status': 'done' if completed else 'running'
-    }
+    return {"success": True, "completed": completed, "status": "done" if completed else "running"}
 
 
 def instance_wait_cloudinit(name, timeout=600, interval=5):
@@ -789,12 +787,14 @@ def instance_wait_cloudinit(name, timeout=600, interval=5):
     completed, error = _check_cloudinit_boot_finished(client, name)
 
     if completed:
-        log.info(f"cloud-init was already completed on instance '{name}' (boot-finished file exists)")
+        log.info(
+            f"cloud-init was already completed on instance '{name}' (boot-finished file exists)"
+        )
         return {
-            'success': True,
-            'status': 'already_completed',
-            'message': f'cloud-init was already completed on {name}',
-            'elapsed_time': 0
+            "success": True,
+            "status": "already_completed",
+            "message": f"cloud-init was already completed on {name}",
+            "elapsed_time": 0,
         }
 
     # cloud-init is not yet complete, start waiting loop
@@ -811,12 +811,14 @@ def instance_wait_cloudinit(name, timeout=600, interval=5):
 
         if completed:
             elapsed = time.time() - started
-            log.info(f"cloud-init completed on '{name}' after {elapsed:.1f}s (boot-finished file exists)")
+            log.info(
+                f"cloud-init completed on '{name}' after {elapsed:.1f}s (boot-finished file exists)"
+            )
             return {
-                'success': True,
-                'status': 'done',
-                'message': f'cloud-init completed on {name}',
-                'elapsed_time': elapsed
+                "success": True,
+                "status": "done",
+                "message": f"cloud-init completed on {name}",
+                "elapsed_time": elapsed,
             }
 
         # boot-finished doesn't exist yet - still running
@@ -827,31 +829,31 @@ def instance_wait_cloudinit(name, timeout=600, interval=5):
     elapsed = time.time() - started
     log.warning(f"Timeout waiting for cloud-init on instance '{name}' ({elapsed:.1f}s)")
     return {
-        'success': False,
-        'status': 'timeout',
-        'error': f'Timeout waiting for cloud-init to complete after {elapsed:.1f}s'
+        "success": False,
+        "status": "timeout",
+        "error": f"Timeout waiting for cloud-init to complete after {elapsed:.1f}s",
     }
 
 
 __all__ = [
-    'instance_list',
-    'instance_get',
-    'instance_create',
-    'instance_delete',
-    'instance_update',
-    'instance_start',
-    'instance_stop',
-    'instance_restart',
-    'instance_wait_ready',
-    'instance_snapshot_list',
-    'instance_snapshot_get',
-    'instance_snapshot_create',
-    'instance_snapshot_rename',
-    'instance_snapshot_restore',
-    'instance_snapshot_delete',
-    'instance_snapshot_update',
-    'instance_snapshot_publish',
-    'instance_check_cloudinit_enabled',
-    'instance_get_cloudinit_status',
-    'instance_wait_cloudinit',
+    "instance_list",
+    "instance_get",
+    "instance_create",
+    "instance_delete",
+    "instance_update",
+    "instance_start",
+    "instance_stop",
+    "instance_restart",
+    "instance_wait_ready",
+    "instance_snapshot_list",
+    "instance_snapshot_get",
+    "instance_snapshot_create",
+    "instance_snapshot_rename",
+    "instance_snapshot_restore",
+    "instance_snapshot_delete",
+    "instance_snapshot_update",
+    "instance_snapshot_publish",
+    "instance_check_cloudinit_enabled",
+    "instance_get_cloudinit_status",
+    "instance_wait_cloudinit",
 ]

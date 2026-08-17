@@ -1,4 +1,4 @@
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
@@ -346,9 +346,7 @@ def test_network_update_returns_put_error_after_successful_get(client):
         ),
     ],
 )
-def test_simple_network_mutations(
-    client, function, args, method, path, data, message
-):
+def test_simple_network_mutations(client, function, args, method, path, data, message):
     client._sync_request.return_value = {"error_code": 0}
 
     assert function(*args) == {"success": True, "message": message}
@@ -430,9 +428,7 @@ def test_simple_network_mutations(
         ),
     ],
 )
-def test_resource_create_builds_complete_request(
-    client, function, args, path, data, message
-):
+def test_resource_create_builds_complete_request(client, function, args, path, data, message):
     client._sync_request.return_value = {"error_code": 0}
 
     assert function(*args) == {"success": True, "message": message}
