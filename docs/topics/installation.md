@@ -26,3 +26,13 @@ pip install incus
 Saltexts are not distributed automatically via the fileserver like custom modules, they need to be installed
 on each node you want them to be available on.
 :::
+
+## Optional dependencies
+
+For HTTPS connections with TLS certificate management:
+
+```bash
+pip install cryptography
+```
+
+This is required for the `incus_pki` module.
