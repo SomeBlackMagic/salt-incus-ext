@@ -828,7 +828,7 @@ name = "cryptography"
 version = "50.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "(python_full_version != '3.11.*' and platform_python_implementation != 'PyPy') or (platform_python_implementation != 'PyPy' and sys_platform != 'win32')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/de/41/6cbdcf9142d00fe82836fbb51e503e58088575cf7a0fe1dbff6695bf0840/cryptography-50.0.0.tar.gz", hash = "sha256:eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9", size = 880201, upload-time = "2026-07-31T14:25:10.11Z" }
@@ -1265,6 +1265,7 @@ lint = [
     { name = "pylint" },
 ]
 tests = [
+    { name = "cryptography" },
     { name = "pytest" },
     { name = "pytest-instafail" },
     { name = "pytest-salt-factories" },
@@ -1275,6 +1276,7 @@ tests = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev-extra'", specifier = "==26.5.1" },
     { name = "coverage", marker = "extra == 'dev-extra'", specifier = "==7.14.3" },
+    { name = "cryptography", marker = "extra == 'tests'" },
     { name = "furo", marker = "extra == 'docs'" },
     { name = "isort", marker = "extra == 'dev-extra'", specifier = "==7.0.0" },
     { name = "myst-parser", marker = "extra == 'docs'" },

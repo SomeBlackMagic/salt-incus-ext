@@ -174,6 +174,8 @@ def tests(session):
         "-ra",
         "-s",
     ]
+    if not any(arg == "-m" or arg.startswith("-m=") for arg in session.posargs):
+        args.extend(["-m", "not integration"])
     if session._runner.global_config.forcecolor:
         args.append("--color=yes")
     if not session.posargs:
@@ -235,6 +237,22 @@ def tests(session):
             # Move the coverage DB to artifacts/coverage in order for it to be archived by CI
             if COVERAGE_REPORT_DB.exists():
                 shutil.move(str(COVERAGE_REPORT_DB), str(ARTIFACTS_DIR / COVERAGE_REPORT_DB.name))
+
+
+@nox.session(python="3", name="tests-integration")
+def tests_integration(session):
+    """Run tests which cross a real Salt process boundary."""
+    _install_requirements(session, install_source=True)
+
+    args = [
+        "tests/integration/",
+        "-v",
+        "--tb=short",
+    ]
+    if not any(arg == "-m" or arg.startswith("-m=") for arg in session.posargs):
+        args.extend(["-m", "integration and not slow"])
+    args.extend(session.posargs)
+    session.run("pytest", *args)
 
 
 class Tee:
