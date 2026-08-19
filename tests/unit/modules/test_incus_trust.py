@@ -137,6 +137,31 @@ def test_trust_add_builds_complete_request(client):
     )
 
 
+def test_trust_add_includes_projects_when_provided(client):
+    client._sync_request.return_value = {"error_code": 0}
+
+    assert (
+        incus_trust_mod.trust_add(
+            "certificate",
+            name="salt-cloud",
+            restricted=True,
+            projects=("default", "cloud"),
+        )["success"]
+        is True
+    )
+    client._sync_request.assert_called_once_with(
+        "POST",
+        "/certificates",
+        data={
+            "type": "client",
+            "certificate": "certificate",
+            "name": "salt-cloud",
+            "restricted": True,
+            "projects": ["default", "cloud"],
+        },
+    )
+
+
 @pytest.mark.parametrize("name", [None, ""])
 def test_trust_add_uses_default_name_and_false_restriction(client, name):
     client._sync_request.return_value = {"error_code": 0}
@@ -166,6 +191,68 @@ def test_trust_add_returns_api_error(client, response, error):
     client._sync_request.return_value = response
 
     assert incus_trust_mod.trust_add("certificate") == {
+        "success": False,
+        "error": error,
+    }
+
+
+@pytest.mark.parametrize("fingerprint", [None, ""])
+def test_trust_update_rejects_missing_fingerprint(monkeypatch, fingerprint):
+    factory = Mock()
+    monkeypatch.setattr(incus_trust_mod, "_client", factory)
+
+    assert incus_trust_mod.trust_update(fingerprint, name="salt-cloud") == {
+        "success": False,
+        "error": "fingerprint is required",
+    }
+    factory.assert_not_called()
+
+
+def test_trust_update_requires_at_least_one_field(monkeypatch):
+    factory = Mock()
+    monkeypatch.setattr(incus_trust_mod, "_client", factory)
+
+    assert incus_trust_mod.trust_update("abc") == {
+        "success": False,
+        "error": "at least one update field is required",
+    }
+    factory.assert_not_called()
+
+
+def test_trust_update_patches_selected_fields(client):
+    client._sync_request.return_value = {"error_code": 0}
+
+    assert incus_trust_mod.trust_update(
+        "finger print",
+        name="salt-cloud",
+        restricted=True,
+        projects=("default",),
+    ) == {
+        "success": True,
+        "message": "Certificate finger print updated",
+    }
+    client._sync_request.assert_called_once_with(
+        "PATCH",
+        "/certificates/finger%20print",
+        data={
+            "name": "salt-cloud",
+            "restricted": True,
+            "projects": ["default"],
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    ("response", "error"),
+    [
+        ({"error_code": 1, "error": "not found"}, "not found"),
+        ({"error_code": 1}, "Failed to update trusted certificate"),
+    ],
+)
+def test_trust_update_returns_api_error(client, response, error):
+    client._sync_request.return_value = response
+
+    assert incus_trust_mod.trust_update("abc", restricted=False) == {
         "success": False,
         "error": error,
     }
