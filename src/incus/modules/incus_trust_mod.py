@@ -64,7 +64,7 @@ def trust_get(fingerprint):
     return {"success": True, "certificate": result.get("metadata", {})}
 
 
-def trust_add(cert_pem, name=None, restricted=False):
+def trust_add(cert_pem, name=None, restricted=False, projects=None):
     """
     Add a client certificate to the Incus trust store.
 
@@ -83,6 +83,8 @@ def trust_add(cert_pem, name=None, restricted=False):
         "name": name or "salt-cloud",
         "restricted": bool(restricted),
     }
+    if projects is not None:
+        data["projects"] = list(projects)
 
     client = _client()
     result = client._sync_request("POST", "/certificates", data=data)
@@ -91,6 +93,42 @@ def trust_add(cert_pem, name=None, restricted=False):
         return {"success": False, "error": result.get("error", "Failed to add trusted certificate")}
 
     return {"success": True, "message": "Certificate added to trust store"}
+
+
+def trust_update(fingerprint, name=None, restricted=None, projects=None):
+    """
+    Partially update a trusted certificate by fingerprint.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' incus.trust_update <fingerprint> name=salt-cloud restricted=False
+    """
+    if not fingerprint:
+        return {"success": False, "error": "fingerprint is required"}
+
+    data = {}
+    if name is not None:
+        data["name"] = name
+    if restricted is not None:
+        data["restricted"] = bool(restricted)
+    if projects is not None:
+        data["projects"] = list(projects)
+
+    if not data:
+        return {"success": False, "error": "at least one update field is required"}
+
+    client = _client()
+    result = client._sync_request("PATCH", f"/certificates/{quote(fingerprint)}", data=data)
+
+    if result.get("error_code") != 0:
+        return {
+            "success": False,
+            "error": result.get("error", "Failed to update trusted certificate"),
+        }
+
+    return {"success": True, "message": f"Certificate {fingerprint} updated"}
 
 
 def trust_remove(fingerprint):
@@ -122,5 +160,6 @@ __all__ = [
     "trust_list",
     "trust_get",
     "trust_add",
+    "trust_update",
     "trust_remove",
 ]

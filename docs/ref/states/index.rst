@@ -18,4 +18,5 @@ _____________
     incus_profile_mod
     incus_settings_mod
     incus_storage_pool_mod
+    incus_trust_mod
     incus_volume_mod
