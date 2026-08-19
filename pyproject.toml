@@ -81,6 +81,7 @@ lint = [
     "pylint==4.0.4",
 ]
 tests = [
+    "cryptography",
     "pytest>=7.2.0",
     "pytest-salt-factories>=1.0.0; sys_platform == 'win32'",
     "pytest-salt-factories[docker]>=1.0.0; sys_platform != 'win32'",
@@ -174,6 +175,7 @@ showcontent = true
 # these settings in case a user has setup ruff in their editor environment.
 [tool.pytest.ini_options]
 markers = [
+    "integration: requires Salt daemons and an integration environment",
     "slow: marks tests as slow (requires a running Incus daemon and image download)",
 ]
 
