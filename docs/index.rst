@@ -9,6 +9,9 @@ Salt Extension for interacting with Incus
   :hidden:
 
   topics/installation
+  topics/configuration
+  topics/quickstart
+  topics/troubleshooting
   topics/cloud-bootstrap
 
 .. toctree::
@@ -18,6 +21,7 @@ Salt Extension for interacting with Incus
 
   ref/modules/index
   ref/states/index
+  ref/clouds/index
 
 .. toctree::
   :maxdepth: 2
