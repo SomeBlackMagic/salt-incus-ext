@@ -45,10 +45,10 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.urls]
-Homepage = "https://github.com/salt-extensions/saltext-incus"
+Homepage = "https://github.com/SomeBlackMagic/salt-incus-ext"
 Documentation = "https://salt-extensions.github.io/saltext-incus/incus"
-Source = "https://github.com/salt-extensions/saltext-incus"
-Tracker = "https://github.com/salt-extensions/saltext-incus/issues"
+Source = "https://github.com/SomeBlackMagic/salt-incus-ext"
+Tracker = "https://github.com/SomeBlackMagic/salt-incus-ext/issues"
 
 [project.optional-dependencies]
 changelog = ["towncrier==25.8.0"]
@@ -134,7 +134,7 @@ directory = "changelog/"
 start_string = "# Changelog\n"
 underlines = ["", "", ""]
 title_format = "## {version} ({project_date})"
-issue_format = "[#{issue}](https://github.com/salt-extensions/saltext-incus/issues/{issue})"
+issue_format = "[#{issue}](https://github.com/SomeBlackMagic/salt-incus-ext/issues/{issue})"
 
 [[tool.towncrier.type]]
 directory = "breaking"
