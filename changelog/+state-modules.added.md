@@ -1,0 +1,1 @@
+Added state modules for declarative management of Incus instances and snapshots, networks, storage pools, volumes, images, profiles, settings, cluster members, and PKI certificates, with idempotent updates and Salt test-mode support.
