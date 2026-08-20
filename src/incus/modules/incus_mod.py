@@ -44,6 +44,7 @@ import tempfile
 import time
 from urllib.parse import urljoin
 
+from incus.utils import redact_sensitive_data
 from incus.utils import resolve_polling_settings
 from incus.utils import validate_timeout
 
@@ -413,6 +414,8 @@ class IncusClient:
         else:
             url = self.base_url
 
+        log.debug("Incus API %s %s (params=%s)", method, url, params)
+
         try:
             response = self.session.request(
                 method,
@@ -438,12 +441,16 @@ class IncusClient:
                     log.error("Request URL: %s %s", method, url)
                     log.error("Request params: %s", params)
                     log.error(
-                        "Request data (JSON): %s", json.dumps(data, indent=2) if data else "None"
+                        "Request data (JSON): %s",
+                        json.dumps(redact_sensitive_data(data), indent=2) if data else "None",
                     )
 
                     try:
                         error_body = e.response.json()
-                        log.error("Response body: %s", json.dumps(error_body, indent=2))
+                        log.error(
+                            "Response body: %s",
+                            json.dumps(redact_sensitive_data(error_body), indent=2),
+                        )
 
                         # Extract error message from Incus API response
                         if isinstance(error_body, dict):
@@ -518,32 +525,40 @@ class IncusClient:
             jitter=jitter,
         )
         validate_timeout(timeout)
+        log.debug("Waiting for operation %s (timeout=%ds)", operation_url, timeout)
 
         deadline = time.monotonic() + timeout
         attempt = 0
 
         # Operations must begin with /1.0/operations
         if not operation_url.startswith("/1.0/operations/"):
-            return {"success": False, "error": f"Invalid operation URL: {operation_url}"}
+            error = f"Invalid operation URL: {operation_url}"
+            log.error("Operation %s failed: %s", operation_url, error)
+            return {"success": False, "error": error}
 
         while True:
             # Timeout
             if time.monotonic() > deadline:
-                return {"success": False, "error": "Timeout waiting for operation to finish"}
+                error = "Timeout waiting for operation to finish"
+                log.error("Operation %s failed: %s", operation_url, error)
+                return {"success": False, "error": error}
 
             # Query operation state
             result = self._sync_request("GET", operation_url.replace("/1.0/", "/"))
 
             if result.get("error_code") != 0:
+                error = result.get("error", "Unknown error")
+                log.error("Operation %s failed: %s", operation_url, error)
                 return {
                     "success": False,
-                    "error": result.get("error", "Unknown error"),
+                    "error": error,
                     "operation": result,
                 }
 
             # Structure: result["metadata"] contains the operation itself
             op = result.get("metadata", {})
             status_code = op.get("status_code")
+            log.debug("Operation %s status_code=%s", operation_url, status_code)
 
             # Running: 100, 101, 103
             if status_code in (100, 101, 103):
@@ -555,21 +570,26 @@ class IncusClient:
 
             # Success
             if status_code == 200:
+                log.info("Operation %s completed successfully", operation_url)
                 return result
 
             # Failure
             if status_code == 400:
+                error = op.get("err", "Operation failed")
+                log.error("Operation %s failed: %s", operation_url, error)
                 return {
                     "success": False,
                     "operation": op,
-                    "error": op.get("err", "Operation failed"),
+                    "error": error,
                 }
 
             # Unknown code (just in case)
+            error = f"Unexpected status_code: {status_code}"
+            log.error("Operation %s failed: %s", operation_url, error)
             return {
                 "success": False,
                 "operation": op,
-                "error": f"Unexpected status_code: {status_code}",
+                "error": error,
             }
 
     def _sync_request(self, method, endpoint, data=None, params=None):

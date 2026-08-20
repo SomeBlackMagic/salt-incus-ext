@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus images."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -37,6 +39,7 @@ def _find_image_by_alias(alias_name):
 # ======================================================================
 
 
+@log_state_changes
 def image_present(
     name,
     fingerprint=None,
@@ -334,6 +337,7 @@ def image_present(
     return ret
 
 
+@log_state_changes
 def image_absent(fingerprint=None, alias=None):
     """
     Ensure an image is absent locally.
@@ -394,6 +398,7 @@ def image_absent(fingerprint=None, alias=None):
     return ret
 
 
+@log_state_changes
 def image_installed(
     name,
     fingerprint=None,

@@ -1,6 +1,9 @@
 """Profile management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -95,6 +98,7 @@ def profile_create(name, config=None, devices=None, description=""):
     :param description: Profile description
     :return: Dictionary with 'success' status and message
     """
+    log.info("Creating Incus profile '%s'", name)
     client = _client()
 
     data = {
@@ -109,6 +113,7 @@ def profile_create(name, config=None, devices=None, description=""):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus profile '%s' created", name)
     return {"success": True, "message": f"Profile {name} created successfully"}
 
 
@@ -134,6 +139,7 @@ def profile_update(name, config=None, devices=None, description=None):
     :param description: Description to update (replaces existing description)
     :return: Dictionary with 'success' status and message
     """
+    log.info("Updating Incus profile '%s'", name)
     client = _client()
 
     # Get current profile config
@@ -165,6 +171,7 @@ def profile_update(name, config=None, devices=None, description=None):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus profile '%s' updated", name)
     return {"success": True, "message": f"Profile {name} updated successfully"}
 
 
@@ -261,12 +268,14 @@ def profile_delete(name):
     :param name: Profile name
     :return: Dictionary with 'success' status and message
     """
+    log.info("Deleting Incus profile '%s'", name)
     client = _client()
     result = client._sync_request("DELETE", f"/profiles/{quote(name)}")
 
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus profile '%s' deleted", name)
     return {"success": True, "message": f"Profile {name} deleted successfully"}
 
 

@@ -1,5 +1,11 @@
 """Server settings functions for the Incus Salt module."""
 
+import logging
+
+from incus.utils import redact_sensitive_data
+
+log = logging.getLogger(__name__)
+
 __virtualname__ = "incus"
 
 
@@ -105,6 +111,8 @@ def settings_update(config):
     if not config or not isinstance(config, dict):
         return {"success": False, "error": "config parameter must be a dictionary"}
 
+    log.info("Updating Incus server settings")
+    log.debug("Settings payload: %s", redact_sensitive_data(config))
     client = _client()
 
     # Get current settings
@@ -126,6 +134,7 @@ def settings_update(config):
     if result.get("error_code") != 0:
         return {"success": False, "error": result.get("error", "Failed to update settings")}
 
+    log.info("Incus server settings updated")
     return {"success": True, "message": "Server settings updated successfully"}
 
 

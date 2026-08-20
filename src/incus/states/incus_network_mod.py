@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus networking resources."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -72,6 +74,7 @@ def _normalize_config_value(value):
 # ======================================================================
 
 
+@log_state_changes
 def network_present(name, network_type="bridge", config=None, description=""):
     """
     Ensure a network exists with all specified parameters.
@@ -213,6 +216,7 @@ def network_present(name, network_type="bridge", config=None, description=""):
     return ret
 
 
+@log_state_changes
 def network_absent(name):
     """
     Ensure a network does not exist.
@@ -272,6 +276,7 @@ def network_absent(name):
 # ======================================================================
 
 
+@log_state_changes
 def network_acl_present(name, config=None, description="", egress=None, ingress=None):
     """
     Ensure a network ACL exists and matches configuration.
@@ -417,6 +422,7 @@ def network_acl_present(name, config=None, description="", egress=None, ingress=
     return ret
 
 
+@log_state_changes
 def network_acl_absent(name):
     """
     Ensure a network ACL does not exist.
@@ -476,6 +482,7 @@ def network_acl_absent(name):
 # ======================================================================
 
 
+@log_state_changes
 def network_forward_present(network, listen_address, config=None, description="", ports=None):
     """
     Ensure a network forward exists and matches configuration.
@@ -615,6 +622,7 @@ def network_forward_present(network, listen_address, config=None, description=""
     return ret
 
 
+@log_state_changes
 def network_forward_absent(network, listen_address):
     """
     Ensure a network forward does not exist.
@@ -679,6 +687,7 @@ def network_forward_absent(network, listen_address):
 # ======================================================================
 
 
+@log_state_changes
 def network_peer_present(
     network, peer_name, config=None, description="", target_network=None, target_project=None
 ):
@@ -824,6 +833,7 @@ def network_peer_present(
     return ret
 
 
+@log_state_changes
 def network_peer_absent(network, peer_name):
     """
     Ensure a network peer does not exist.
@@ -888,6 +898,7 @@ def network_peer_absent(network, peer_name):
 # ======================================================================
 
 
+@log_state_changes
 def network_zone_present(zone, config=None, description=""):
     """
     Ensure a network zone exists and matches configuration.
@@ -1001,6 +1012,7 @@ def network_zone_present(zone, config=None, description=""):
     return ret
 
 
+@log_state_changes
 def network_zone_absent(zone):
     """
     Ensure a network zone does not exist.
@@ -1055,6 +1067,7 @@ def network_zone_absent(zone):
     return ret
 
 
+@log_state_changes
 def network_zone_record_present(zone, record_name, config=None, description="", entries=None):
     """
     Ensure a network zone record exists and matches configuration.
@@ -1190,6 +1203,7 @@ def network_zone_record_present(zone, record_name, config=None, description="", 
     return ret
 
 
+@log_state_changes
 def network_zone_record_absent(zone, record_name):
     """
     Ensure a network zone record does not exist.

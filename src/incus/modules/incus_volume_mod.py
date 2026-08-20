@@ -1,6 +1,9 @@
 """Storage volume management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -62,6 +65,7 @@ def volume_create(pool, name, volume_type="custom", config=None, description="")
     :param description: Volume description
     :return: Result
     """
+    log.info("Creating volume '%s' in pool '%s'", name, pool)
     client = _client()
 
     data = {"name": name, "type": volume_type, "config": config or {}, "description": description}
@@ -73,6 +77,7 @@ def volume_create(pool, name, volume_type="custom", config=None, description="")
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Volume '%s' created in pool '%s'", name, pool)
     return {"success": True, "message": f"Volume {name} created successfully"}
 
 
@@ -515,6 +520,7 @@ def volume_delete(pool, name, volume_type="custom"):
     :param volume_type: Volume type
     :return: Result
     """
+    log.info("Deleting volume '%s' from pool '%s'", name, pool)
     client = _client()
     result = client._sync_request(
         "DELETE", f"/storage-pools/{quote(pool)}/volumes/{volume_type}/{quote(name)}"
@@ -523,6 +529,7 @@ def volume_delete(pool, name, volume_type="custom"):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Volume '%s' deleted from pool '%s'", name, pool)
     return {"success": True, "message": f"Volume {name} deleted successfully"}
 
 

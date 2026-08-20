@@ -786,6 +786,7 @@ def list_nodes(call=None):
     if call == "action":
         raise SaltCloudSystemExit("The list_nodes function must be called with -f or --function.")
 
+    log.debug("Listing Incus instances")
     client = _client()
     result = client._request("GET", "/instances", params={"recursion": 1})
 
@@ -828,6 +829,7 @@ def list_nodes(call=None):
             "public_ips": [],
         }
 
+    log.debug("Found %d instances", len(nodes))
     return nodes
 
 
@@ -901,6 +903,7 @@ def list_images(call=None):
     if call == "action":
         raise SaltCloudSystemExit("The list_images function must be called with -f or --function.")
 
+    log.debug("Listing Incus image aliases")
     client = _client()
     result = client._request("GET", "/images/aliases", params={"recursion": 1})
 
@@ -971,6 +974,7 @@ def list_sizes(call=None):
     if call == "action":
         raise SaltCloudSystemExit("The list_sizes function must be called with -f or --function.")
 
+    log.debug("Listing Incus profiles as sizes")
     client = _client()
     result = client._request("GET", "/profiles", params={"recursion": 1})
 
@@ -1023,15 +1027,18 @@ def avail_locations(call=None):
     :return: Dict of {member_name: {name, url, database, status, message}}
     """
     del call
+    log.debug("Listing Incus cluster members")
     client = _client()
     result = client._request("GET", "/cluster/members", params={"recursion": 1})
 
     if result.get("error_code") not in (None, 0):
         # Not clustered — return a single local location
+        log.debug("Found %d cluster members", 1)
         return {"local": {"name": "local", "description": "Local Incus server"}}
 
     members = result.get("metadata", []) or []
     if not members:
+        log.debug("Found %d cluster members", 1)
         return {"local": {"name": "local", "description": "Local Incus server"}}
 
     locations = {}
@@ -1047,6 +1054,7 @@ def avail_locations(call=None):
             "message": member.get("message", ""),
         }
 
+    log.debug("Found %d cluster members", len(locations))
     return locations
 
 
@@ -1255,6 +1263,7 @@ def _wait_for_ip(
         jitter=jitter,
     )
     validate_timeout(timeout)
+    log.debug("Waiting for IP on instance '%s' (timeout=%ds)", name, timeout)
 
     deadline = time.monotonic() + timeout
     attempt = 0
@@ -1280,8 +1289,11 @@ def _wait_for_ip(
     result = client._request("GET", f"/instances/{quote(name)}/state")
     if result.get("error_code") in (None, 0):
         network = result.get("metadata", {}).get("network", {}) or {}
-        return _extract_ips(network)
+        ips = _extract_ips(network)
+        if ips:
+            return ips
 
+    log.warning("Instance '%s': no IP obtained after %ds", name, timeout)
     return []
 
 

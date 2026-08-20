@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus server settings."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -15,6 +17,7 @@ def __virtual__():
 # ======================================================================
 
 
+@log_state_changes
 def settings_present(name, config):
     """
     Ensure Incus server has specific global configuration settings.
@@ -114,6 +117,7 @@ def settings_present(name, config):
     return ret
 
 
+@log_state_changes
 def settings_config(name, key, value):
     """
     Ensure a single Incus server configuration setting has a specific value.
@@ -203,6 +207,7 @@ def settings_config(name, key, value):
     return ret
 
 
+@log_state_changes
 def settings_absent(name, key):
     """
     Ensure a specific Incus server configuration setting is not present.
@@ -281,6 +286,7 @@ def settings_absent(name, key):
     return ret
 
 
+@log_state_changes
 def settings_managed(name, config):
     """
     Ensure Incus server configuration exactly matches the specified settings.

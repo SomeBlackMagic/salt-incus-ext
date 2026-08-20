@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus profiles."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -22,6 +24,7 @@ def _normalize_config_value(value):
 # ======================================================================
 
 
+@log_state_changes
 def profile_present(name, config=None, devices=None, description=""):
     """
     Ensure a profile exists and matches all specified parameters.
@@ -227,6 +230,7 @@ def profile_present(name, config=None, devices=None, description=""):
     return ret
 
 
+@log_state_changes
 def profile_absent(name):
     """
     Ensure a profile does not exist.
@@ -287,6 +291,7 @@ def profile_absent(name):
     return ret
 
 
+@log_state_changes
 def profile_config(name, config, description=None):
     """
     Ensure a profile has specific configuration.

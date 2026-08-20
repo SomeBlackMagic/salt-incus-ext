@@ -1,6 +1,9 @@
 """Storage pool management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -58,6 +61,7 @@ def storage_pool_create(name, driver, config=None, description=""):
     :param description: Pool description
     :return: Result
     """
+    log.info("Creating Incus storage pool '%s' (driver=%s)", name, driver)
     client = _client()
 
     data = {"name": name, "driver": driver, "config": config or {}, "description": description}
@@ -67,6 +71,7 @@ def storage_pool_create(name, driver, config=None, description=""):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus storage pool '%s' created", name)
     return {"success": True, "message": f"Storage pool {name} created successfully"}
 
 
@@ -192,12 +197,16 @@ def storage_pool_delete(name):
     :param name: Pool name
     :return: Result
     """
+    log.info("Deleting Incus storage pool '%s'", name)
     client = _client()
     result = client._sync_request("DELETE", f"/storage-pools/{quote(name)}")
 
     if result.get("error_code") != 0:
+        if result.get("error_code") == 404:
+            log.warning("Storage pool '%s' not found, skipping delete", name)
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus storage pool '%s' deleted", name)
     return {"success": True, "message": f"Storage pool {name} deleted successfully"}
 
 

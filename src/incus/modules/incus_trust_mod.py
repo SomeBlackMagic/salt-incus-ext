@@ -1,6 +1,9 @@
 """Trust management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -74,13 +77,15 @@ def trust_add(cert_pem, name=None, restricted=False, projects=None):
 
         salt '*' incus.trust_add cert_pem="$(cat /path/client.crt)" name=salt-cloud restricted=False
     """
+    trust_name = name or "salt-cloud"
+    log.info("Adding certificate '%s' to Incus trust store", trust_name)
     if not cert_pem:
         return {"success": False, "error": "cert_pem is required"}
 
     data = {
         "type": "client",
         "certificate": cert_pem,
-        "name": name or "salt-cloud",
+        "name": trust_name,
         "restricted": bool(restricted),
     }
     if projects is not None:
@@ -92,6 +97,7 @@ def trust_add(cert_pem, name=None, restricted=False, projects=None):
     if result.get("error_code") != 0:
         return {"success": False, "error": result.get("error", "Failed to add trusted certificate")}
 
+    log.info("Certificate '%s' added to Incus trust store", trust_name)
     return {"success": True, "message": "Certificate added to trust store"}
 
 
@@ -141,6 +147,7 @@ def trust_remove(fingerprint):
 
         salt '*' incus.trust_remove <fingerprint>
     """
+    log.info("Removing certificate '%s' from Incus trust store", fingerprint)
     if not fingerprint:
         return {"success": False, "error": "fingerprint is required"}
 
@@ -148,11 +155,14 @@ def trust_remove(fingerprint):
     result = client._sync_request("DELETE", f"/certificates/{quote(fingerprint)}")
 
     if result.get("error_code") != 0:
+        if result.get("error_code") == 404:
+            log.warning("Certificate '%s' not found in trust store", fingerprint)
         return {
             "success": False,
             "error": result.get("error", "Failed to remove trusted certificate"),
         }
 
+    log.info("Certificate '%s' removed from Incus trust store", fingerprint)
     return {"success": True, "message": f"Certificate {fingerprint} removed from trust store"}
 
 
