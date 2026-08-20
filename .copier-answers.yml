@@ -24,9 +24,9 @@ project_name: incus
 python_requires: '3.10'
 relax_pylint: true
 salt_version: '3006'
-source_url: https://github.com/salt-extensions/saltext-incus
+source_url: https://github.com/SomeBlackMagic/salt-incus-ext
 ssh_fixtures: true
 summary: Salt Extension for interacting with Incus
 test_containers: true
-tracker_url: https://github.com/salt-extensions/saltext-incus/issues
-url: https://github.com/salt-extensions/saltext-incus
+tracker_url: https://github.com/SomeBlackMagic/salt-incus-ext/issues
+url: https://github.com/SomeBlackMagic/salt-incus-ext

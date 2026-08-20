@@ -26,7 +26,7 @@ To get started contributing, first clone this repository (or your fork):
 
 ```bash
 # Clone the repo
-git clone --origin upstream git@github.com:salt-extensions/saltext-incus.git
+git clone --origin upstream git@github.com:SomeBlackMagic/salt-incus-ext.git
 
 # Change to the repo dir
 cd incus
@@ -100,8 +100,8 @@ appreciate every contribution!
 [first-steps]: https://salt-extensions.github.io/salt-extension-copier/topics/creation.html#initialize-the-python-virtual-environment
 [submitting-pr]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
 [direnv]: https://direnv.net
-[issues]: https://github.com/salt-extensions/saltext-incus/issues
-[PRs]: https://github.com/salt-extensions/saltext-incus/pulls
-[discussions]: https://github.com/salt-extensions/saltext-incus/discussions
+[issues]: https://github.com/SomeBlackMagic/salt-incus-ext/issues
+[PRs]: https://github.com/SomeBlackMagic/salt-incus-ext/pulls
+[discussions]: https://github.com/SomeBlackMagic/salt-incus-ext/discussions
 [comments]: https://conventionalcomments.org/
 [docs]: https://salt-extensions.github.io/saltext-incus/incus
