@@ -326,14 +326,17 @@ def generate_keypair(cn=None, days=None, storage=None, force=False):
         existing_key = _storage_read(normalized_storage, "key")
 
         if existing_cert and existing_key and not force:
-            log.info("TLS keypair already exists in storage, skipping generation")
+            log.warning("Keypair for '%s' already exists, skipping generation", cert_cn)
             return {
                 "success": True,
                 "changed": False,
                 "comment": "Certificate and key already exist in storage",
             }
 
+        log.info("Generating EC P-384 keypair for '%s'", cert_cn)
         cert_pem, key_pem = _generate_keypair(cert_cn, cert_days)
+        log.debug("Storing certificate at %s", normalized_storage["cert"])
+        log.debug("Storing key at %s (mode=0600)", normalized_storage["key"])
         _storage_write_pair(normalized_storage, cert_pem, key_pem)
         fingerprint = _fingerprint_from_cert(cert_pem)
 

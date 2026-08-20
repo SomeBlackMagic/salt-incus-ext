@@ -2,6 +2,8 @@
 
 import logging
 
+from incus.utils import log_state_changes
+
 log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
@@ -19,6 +21,7 @@ def __virtual__():
 # ======================================================================
 
 
+@log_state_changes
 def instance_snapshot_present(instance, name, stateful=False, description=""):
     """
     Ensure an instance snapshot exists.
@@ -95,6 +98,7 @@ def instance_snapshot_present(instance, name, stateful=False, description=""):
     return ret
 
 
+@log_state_changes
 def instance_snapshot_absent(instance, name):
     """
     Ensure an instance snapshot does not exist.
@@ -158,6 +162,7 @@ def instance_snapshot_absent(instance, name):
     return ret
 
 
+@log_state_changes
 def instance_snapshot_restored(instance, name):
     """
     Ensure an instance is restored to a specific snapshot state.
@@ -235,6 +240,7 @@ def instance_snapshot_restored(instance, name):
     return ret
 
 
+@log_state_changes
 def instance_snapshots_managed(  # pylint: disable=unused-argument
     instance, snapshots_config, name=None
 ):
@@ -411,6 +417,7 @@ def instance_snapshots_managed(  # pylint: disable=unused-argument
     return ret
 
 
+@log_state_changes
 def instance_snapshots_rotated(  # pylint: disable=unused-argument
     instance, pattern, keep, name=None
 ):

@@ -4,6 +4,8 @@ import logging
 import time
 from urllib.parse import quote
 
+from incus.utils import redact_sensitive_data
+
 log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
@@ -97,6 +99,7 @@ def instance_create(
     :param ephemeral: Whether instance is ephemeral
     :return: Result
     """
+    log.info("Creating Incus instance '%s'", name)
     client = _client()
 
     data = {"name": name, "type": instance_type, "ephemeral": ephemeral}
@@ -118,6 +121,7 @@ def instance_create(
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' created", name)
     return {"success": True, "message": f"Instance {name} created successfully"}
 
 
@@ -136,6 +140,7 @@ def instance_delete(name, force=False):
     :param force: Force deletion
     :return: Result
     """
+    log.info("Deleting Incus instance '%s'", name)
     client = _client()
 
     # Stop instance if running and force is True
@@ -150,8 +155,11 @@ def instance_delete(name, force=False):
     result = client._sync_request("DELETE", f"/instances/{quote(name)}")
 
     if result.get("error_code") != 0:
+        if result.get("error_code") == 404:
+            log.warning("Incus instance '%s' not found, skipping delete", name)
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' deleted", name)
     return {"success": True, "message": f"Instance {name} deleted successfully"}
 
 
@@ -171,6 +179,7 @@ def instance_update(name, config=None, devices=None, profiles=None):
     :param profiles: Profiles to apply
     :return: Result
     """
+    log.info("Updating Incus instance '%s' config", name)
     client = _client()
 
     # Get current instance config
@@ -197,11 +206,13 @@ def instance_update(name, config=None, devices=None, profiles=None):
     if profiles is not None:
         instance_data["profiles"] = profiles
 
+    log.debug("Instance '%s' update payload: %s", name, redact_sensitive_data(instance_data))
     result = client._sync_request("PUT", f"/instances/{quote(name)}", data=instance_data)
 
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' updated", name)
     return {"success": True, "message": f"Instance {name} updated successfully"}
 
 
@@ -220,6 +231,7 @@ def instance_start(name, force=False, stateful=False):
     :param stateful: Restore state
     :return: Result
     """
+    log.info("Starting Incus instance '%s'", name)
     client = _client()
 
     data = {"action": "start", "force": force, "stateful": stateful}
@@ -229,6 +241,7 @@ def instance_start(name, force=False, stateful=False):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' started", name)
     return {"success": True, "message": f"Instance {name} started successfully"}
 
 
@@ -249,6 +262,7 @@ def instance_stop(name, force=False, stateful=False, timeout=30):
     :param timeout: Timeout in seconds
     :return: Result
     """
+    log.info("Stopping Incus instance '%s'", name)
     client = _client()
 
     data = {"action": "stop", "force": force, "stateful": stateful, "timeout": timeout}
@@ -258,6 +272,7 @@ def instance_stop(name, force=False, stateful=False, timeout=30):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' stopped", name)
     return {"success": True, "message": f"Instance {name} stopped successfully"}
 
 
@@ -276,6 +291,7 @@ def instance_restart(name, force=False, timeout=30):
     :param timeout: Timeout in seconds
     :return: Result
     """
+    log.info("Restarting Incus instance '%s'", name)
     client = _client()
 
     data = {"action": "restart", "force": force, "timeout": timeout}
@@ -285,6 +301,7 @@ def instance_restart(name, force=False, timeout=30):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus instance '%s' restarted", name)
     return {"success": True, "message": f"Instance {name} restarted successfully"}
 
 

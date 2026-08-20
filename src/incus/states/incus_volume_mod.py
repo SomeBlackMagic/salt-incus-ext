@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus storage volumes."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -15,6 +17,7 @@ def __virtual__():
 # ======================================================================
 
 
+@log_state_changes
 def volume_present(name, pool, volume_type="custom", config=None, description=""):
     """
     Ensure a storage volume exists.
@@ -89,6 +92,7 @@ def volume_present(name, pool, volume_type="custom", config=None, description=""
     return ret
 
 
+@log_state_changes
 def volume_absent(name, pool, volume_type="custom"):
     """
     Ensure a storage volume does not exist.
@@ -153,6 +157,7 @@ def volume_absent(name, pool, volume_type="custom"):
     return ret
 
 
+@log_state_changes
 def volume_config(name, pool, volume_type="custom", config=None, description=None):
     """
     Ensure a storage volume has specific configuration.
@@ -230,6 +235,7 @@ def volume_config(name, pool, volume_type="custom", config=None, description=Non
     return ret
 
 
+@log_state_changes
 def volume_snapshot_present(name, pool, volume, volume_type="custom", description=""):
     """
     Ensure a volume snapshot exists.
@@ -291,6 +297,7 @@ def volume_snapshot_present(name, pool, volume, volume_type="custom", descriptio
     return ret
 
 
+@log_state_changes
 def volume_snapshot_absent(name, pool, volume, volume_type="custom"):
     """
     Ensure a volume snapshot does not exist.
@@ -349,6 +356,7 @@ def volume_snapshot_absent(name, pool, volume, volume_type="custom"):
     return ret
 
 
+@log_state_changes
 def volume_attached(  # pylint: disable=unused-argument
     name, pool, instance, device_name=None, path=None, volume_type="custom"
 ):
@@ -445,6 +453,7 @@ def volume_attached(  # pylint: disable=unused-argument
     return ret
 
 
+@log_state_changes
 def volume_detached(name, pool, instance, device_name=None):
     """
     Ensure a volume is detached from an instance.

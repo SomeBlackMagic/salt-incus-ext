@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus cluster members."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -15,6 +17,7 @@ def __virtual__():
 # ======================================================================
 
 
+@log_state_changes
 def cluster_member_present(name, address, cluster_password=None):
     """
     Ensure a cluster member exists.
@@ -84,6 +87,7 @@ def cluster_member_present(name, address, cluster_password=None):
     return ret
 
 
+@log_state_changes
 def cluster_member_absent(name, force=False):
     """
     Ensure a cluster member does not exist.

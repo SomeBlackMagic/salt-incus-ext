@@ -2,6 +2,8 @@
 
 import logging
 
+from incus.utils import log_state_changes
+
 log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
@@ -26,6 +28,7 @@ def _normalize_config_value(value):
 # ======================================================================
 
 
+@log_state_changes
 def instance_present(
     name,
     source=None,
@@ -199,6 +202,7 @@ def instance_present(
     return ret
 
 
+@log_state_changes
 def instance_absent(name, force=False):
     """
     Ensure an instance does not exist.
@@ -254,6 +258,7 @@ def instance_absent(name, force=False):
     return ret
 
 
+@log_state_changes
 def instance_running(name, wait_is_ready=False, ready_timeout=300):
     """
     Ensure an instance is running.
@@ -357,6 +362,7 @@ def instance_running(name, wait_is_ready=False, ready_timeout=300):
     return ret
 
 
+@log_state_changes
 def instance_stopped(name, force=False):
     """
     Ensure an instance is stopped.
@@ -421,6 +427,7 @@ def instance_stopped(name, force=False):
     return ret
 
 
+@log_state_changes
 def instance_initialized(name, timeout=600, check_interval=5):
     """
     Ensure an instance has completed cloud-init initialization.

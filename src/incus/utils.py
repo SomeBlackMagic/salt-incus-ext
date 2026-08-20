@@ -1,9 +1,60 @@
 """Shared utility helpers for the Incus extension."""
 
+import logging
 import math
 import random
 from dataclasses import dataclass
+from functools import wraps
 from numbers import Real
+
+_SENSITIVE_FIELD_MARKERS = (
+    "certificate",
+    "cloud-init",
+    "key",
+    "password",
+    "secret",
+    "token",
+    "user-data",
+)
+
+
+def redact_sensitive_data(value):
+    """Return a copy with values of sensitive mapping fields redacted."""
+    if isinstance(value, dict):
+        return {
+            key: (
+                "<redacted>"
+                if any(marker in str(key).lower() for marker in _SENSITIVE_FIELD_MARKERS)
+                else redact_sensitive_data(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_sensitive_data(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_sensitive_data(item) for item in value)
+    return value
+
+
+def log_state_changes(func):
+    """Log the changes reported by a successful Salt state function."""
+    logger = logging.getLogger(func.__module__)
+
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if isinstance(result, dict) and result.get("result") is not False:
+            name = result.get("name", args[0] if args else kwargs.get("name", ""))
+            changes = result.get("changes") or {}
+            if changes:
+                logger.debug(
+                    "State '%s': applying changes %s", name, redact_sensitive_data(changes)
+                )
+            else:
+                logger.debug("State '%s': no changes needed", name)
+        return result
+
+    return wrapped
 
 
 def _validate_real(name, value, *, minimum, inclusive):

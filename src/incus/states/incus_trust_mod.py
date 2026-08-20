@@ -4,6 +4,8 @@ import binascii
 import hashlib
 import ssl
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 _REQUIRED_FUNCTIONS = {
@@ -61,6 +63,7 @@ def _list_certificates(ret):
     return result.get("certificates", []) or []
 
 
+@log_state_changes
 def trust_present(name, cert_pem, restricted=False, projects=None):
     """
     Ensure a Salt Cloud client certificate is present in the Incus trust store.
@@ -165,6 +168,7 @@ def trust_present(name, cert_pem, restricted=False, projects=None):
     return ret
 
 
+@log_state_changes
 def trust_absent(name, fingerprint=None, cert_pem=None):
     """
     Ensure a client certificate is absent from the Incus trust store.

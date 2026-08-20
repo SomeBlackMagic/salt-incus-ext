@@ -1,6 +1,9 @@
 """Network management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -58,6 +61,7 @@ def network_create(name, network_type="bridge", config=None, description=""):
     :param description: Network description
     :return: Result
     """
+    log.info("Creating Incus network '%s' (type=%s)", name, network_type)
     client = _client()
 
     data = {"name": name, "type": network_type, "config": config or {}, "description": description}
@@ -67,6 +71,7 @@ def network_create(name, network_type="bridge", config=None, description=""):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus network '%s' created", name)
     return {"success": True, "message": f"Network {name} created successfully"}
 
 
@@ -105,12 +110,16 @@ def network_delete(name):
     :param name: Network name
     :return: Result
     """
+    log.info("Deleting Incus network '%s'", name)
     client = _client()
     result = client._sync_request("DELETE", f"/networks/{quote(name)}")
 
     if result.get("error_code") != 0:
+        if result.get("error_code") == 404:
+            log.warning("Network '%s' not found", name)
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus network '%s' deleted", name)
     return {"success": True, "message": f"Network {name} deleted successfully"}
 
 
@@ -128,6 +137,7 @@ def network_update(name, config):
     :param config: Configuration to update
     :return: Result
     """
+    log.info("Updating Incus network '%s'", name)
     client = _client()
 
     # Get current network config
@@ -143,6 +153,7 @@ def network_update(name, config):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Incus network '%s' updated", name)
     return {"success": True, "message": f"Network {name} updated successfully"}
 
 

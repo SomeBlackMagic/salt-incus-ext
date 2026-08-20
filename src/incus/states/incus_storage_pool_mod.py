@@ -1,5 +1,7 @@
 """Salt state functions for managing Incus storage pools."""
 
+from incus.utils import log_state_changes
+
 __virtualname__ = "incus"
 
 
@@ -16,6 +18,7 @@ def __virtual__():
 # Storage Pools: storage_pool_present, storage_pool_absent, storage_pool_config
 
 
+@log_state_changes
 def storage_pool_present(name, driver, config=None, description=""):
     """
     Ensure a storage pool exists.
@@ -82,6 +85,7 @@ def storage_pool_present(name, driver, config=None, description=""):
     return ret
 
 
+@log_state_changes
 def storage_pool_absent(name):
     """
     Ensure a storage pool does not exist.
@@ -143,6 +147,7 @@ def storage_pool_absent(name):
     return ret
 
 
+@log_state_changes
 def storage_pool_config(name, config, description=None):
     """
     Ensure a storage pool has specific configuration.

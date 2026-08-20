@@ -4,6 +4,8 @@ Salt state module for managing Incus API client TLS certificates.
 
 import logging
 
+from incus.utils import log_state_changes
+
 log = logging.getLogger(__name__)
 
 __virtualname__ = "incus_pki"
@@ -46,6 +48,7 @@ def _get_trust_entry_from_storage(storage=None):
     return None, fingerprint, error
 
 
+@log_state_changes
 def keypair_present(name, storage=None, generate=None, force=False):
     """
     Ensure API client keypair exists in configured storage.
@@ -98,6 +101,7 @@ def keypair_present(name, storage=None, generate=None, force=False):
     return ret
 
 
+@log_state_changes
 def trust_present(name, storage=None, restricted=False):
     """
     Ensure certificate from storage is present in Incus trust store.
@@ -175,6 +179,7 @@ def trust_present(name, storage=None, restricted=False):
     return ret
 
 
+@log_state_changes
 def trust_absent(name, storage=None):
     """
     Ensure certificate from storage is absent from Incus trust store.
@@ -218,6 +223,7 @@ def trust_absent(name, storage=None):
     return ret
 
 
+@log_state_changes
 def client_trusted(name, storage=None, generate=None, restricted=False):
     """
     Ensure API client keypair exists in storage and is trusted by Incus.

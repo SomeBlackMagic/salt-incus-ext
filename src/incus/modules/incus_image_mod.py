@@ -73,12 +73,14 @@ def image_delete(fingerprint):
 
         salt '*' incus.image_delete <fingerprint>
     """
+    log.info("Deleting image '%s'", fingerprint)
     client = _client()
     result = client._sync_request("DELETE", f"/images/{quote(fingerprint)}")
 
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Image '%s' deleted", fingerprint)
     return {"success": True, "message": f"Image {fingerprint} deleted successfully"}
 
 
@@ -103,6 +105,7 @@ def image_create_from_file(
         salt '*' incus.image_create_from_file /tmp/rootfs.tar.xz
         salt '*' incus.image_create_from_file /tmp/rootfs.tar.xz public=True aliases="['myimage']"
     """
+    log.info("Importing image from '%s'", filename)
     client = _client()
     url = client.base_url + "/images"
 
@@ -222,6 +225,7 @@ def image_create_from_remote(
     # BUILD REQUEST
     # ============
 
+    log.info("Importing image from '%s'", server)
     client = _client()
 
     # Base body

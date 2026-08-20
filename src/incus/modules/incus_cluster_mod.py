@@ -1,6 +1,9 @@
 """Cluster management functions for the Incus Salt module."""
 
+import logging
 from urllib.parse import quote
+
+log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
 
@@ -78,6 +81,7 @@ def cluster_member_add(name, address, cluster_password=None):
     :param cluster_password: Cluster password
     :return: Result
     """
+    log.info("Adding cluster member '%s'", name)
     client = _client()
 
     data = {"server_name": name, "server_address": address}
@@ -90,6 +94,7 @@ def cluster_member_add(name, address, cluster_password=None):
     if result.get("error_code") != 0:
         return {"success": False, "error": result["error"]}
 
+    log.info("Cluster member '%s' added", name)
     return {"success": True, "message": f"Cluster member {name} added successfully"}
 
 
@@ -107,6 +112,7 @@ def cluster_member_remove(name, force=False):
     :param force: Force removal
     :return: Result
     """
+    log.info("Removing cluster member '%s'", name)
     client = _client()
 
     params = {}
@@ -116,8 +122,11 @@ def cluster_member_remove(name, force=False):
     result = client._sync_request("DELETE", f"/cluster/members/{quote(name)}", params=params)
 
     if result.get("error_code") != 0:
+        if result.get("error_code") == 404:
+            log.warning("Cluster member '%s' not found", name)
         return {"success": False, "error": result["error"]}
 
+    log.info("Cluster member '%s' removed", name)
     return {"success": True, "message": f"Cluster member {name} removed successfully"}
 
 
