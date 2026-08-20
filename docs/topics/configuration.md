@@ -60,6 +60,39 @@ incus:
     socket: /var/lib/incus/unix.socket
 ```
 
+### Polling backoff
+
+Polling keeps its fixed legacy intervals by default. Enable exponential
+backoff independently for asynchronous operations and IP address discovery:
+
+```yaml
+incus:
+  connection:
+    polling:
+      operation:
+        backoff_enabled: true
+        initial_interval: 1.0
+        backoff_factor: 1.5
+        max_interval: 30.0
+        jitter: 0.2
+      ip:
+        backoff_enabled: true
+        initial_interval: 2.0
+        backoff_factor: 1.5
+        max_interval: 15.0
+        jitter: 0.2
+```
+
+`jitter` is a fractional variation. For example, `0.2` varies an interval by
+up to 20 percent in either direction. `max_interval` limits the base interval;
+jitter is applied after that limit.
+
+An Incus cloud profile can override IP polling settings with
+`wait_for_ip_initial_interval`, `wait_for_ip_backoff_enabled`,
+`wait_for_ip_backoff_factor`, `wait_for_ip_max_interval`, and
+`wait_for_ip_jitter`. The existing `wait_for_ip_interval` setting remains
+supported as a legacy alias for `wait_for_ip_initial_interval`.
+
 ## SDB-based certificate storage
 
 Certificates and keys can be stored in Salt's SDB (Secure Data Backend)

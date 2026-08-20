@@ -1,8 +1,18 @@
 from unittest.mock import Mock
+from unittest.mock import call
 
 import pytest
 
 from incus.clouds import incus_mod
+
+
+def make_client(**attributes):
+    """Create a client without running its network-related constructor."""
+    client = object.__new__(incus_mod.IncusClient)
+    client._temp_files = []
+    for name, value in attributes.items():
+        setattr(client, name, value)
+    return client
 
 
 def test_virtual_reports_missing_requests(monkeypatch):
@@ -113,3 +123,205 @@ def test_avail_locations_accepts_call_argument(monkeypatch):
     assert incus_mod.avail_locations(call="function") == {
         "local": {"name": "local", "description": "Local Incus server"}
     }
+
+
+def test_wait_for_operation_uses_backoff(monkeypatch):
+    client = make_client(config={})
+    client._request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 200}},
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.return_value = 0
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    client._wait_for_operation(
+        "/1.0/operations/operation-id",
+        backoff_enabled=True,
+        backoff_factor=1.5,
+        jitter=0,
+    )
+
+    assert time_mock.sleep.call_args_list == [call(1), call(1.5)]
+
+
+def test_wait_for_ip_kwargs_translates_profile_overrides():
+    vm_ = {
+        "wait_for_ip_timeout": 90,
+        "wait_for_ip_initial_interval": 1,
+        "wait_for_ip_backoff_enabled": True,
+        "wait_for_ip_backoff_factor": 2,
+        "wait_for_ip_max_interval": 10,
+        "wait_for_ip_jitter": 0.1,
+    }
+
+    assert incus_mod._wait_for_ip_kwargs(vm_) == {
+        "timeout": 90,
+        "initial_interval": 1,
+        "backoff_enabled": True,
+        "backoff_factor": 2,
+        "max_interval": 10,
+        "jitter": 0.1,
+    }
+
+
+def test_wait_for_ip_kwargs_preserves_legacy_interval():
+    assert incus_mod._wait_for_ip_kwargs({"wait_for_ip_interval": 4}) == {
+        "timeout": 120,
+        "interval": 4,
+    }
+
+
+def test_wait_for_ip_uses_provider_backoff(monkeypatch):
+    client = make_client(
+        config={
+            "connection": {
+                "polling": {
+                    "ip": {
+                        "backoff_enabled": True,
+                        "initial_interval": 2,
+                        "backoff_factor": 1.5,
+                        "max_interval": 15,
+                        "jitter": 0,
+                    }
+                }
+            }
+        }
+    )
+    client._request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status": "Starting", "network": {}}},
+            {"error_code": 0, "metadata": {"status": "Starting", "network": {}}},
+            {
+                "error_code": 0,
+                "metadata": {
+                    "status": "Running",
+                    "network": {
+                        "eth0": {
+                            "addresses": [
+                                {"family": "inet", "scope": "global", "address": "10.0.0.2"}
+                            ]
+                        }
+                    },
+                },
+            },
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.return_value = 0
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    result = incus_mod._wait_for_ip(client, "vm1")
+
+    assert result == ["10.0.0.2"]
+    assert time_mock.sleep.call_args_list == [call(2), call(3)]
+
+
+def test_wait_for_ip_explicit_options_override_provider(monkeypatch):
+    client = make_client(
+        config={
+            "connection": {
+                "polling": {
+                    "ip": {
+                        "backoff_enabled": True,
+                        "initial_interval": 10,
+                        "backoff_factor": 3,
+                        "max_interval": 30,
+                        "jitter": 0,
+                    }
+                }
+            }
+        }
+    )
+    client._request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {}},
+            {"error_code": 0, "metadata": {}},
+            {
+                "error_code": 0,
+                "metadata": {
+                    "status": "Running",
+                    "network": {
+                        "eth0": {
+                            "addresses": [
+                                {"family": "inet", "scope": "global", "address": "10.0.0.3"}
+                            ]
+                        }
+                    },
+                },
+            },
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.return_value = 0
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    result = incus_mod._wait_for_ip(
+        client,
+        "vm1",
+        initial_interval=1,
+        backoff_factor=2,
+        jitter=0,
+    )
+
+    assert result == ["10.0.0.3"]
+    assert time_mock.sleep.call_args_list == [call(1), call(2)]
+
+
+def test_wait_for_ip_caps_sleep_and_polls_at_timeout_boundary(monkeypatch):
+    client = make_client(config={})
+    client._request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {}},
+            {
+                "error_code": 0,
+                "metadata": {
+                    "status": "Running",
+                    "network": {
+                        "eth0": {
+                            "addresses": [
+                                {"family": "inet", "scope": "global", "address": "10.0.0.4"}
+                            ]
+                        }
+                    },
+                },
+            },
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.side_effect = [0, 0, 1.75, 2]
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    result = incus_mod._wait_for_ip(client, "vm1", timeout=2)
+
+    assert result == ["10.0.0.4"]
+    time_mock.sleep.assert_called_once_with(0.25)
+
+
+def test_wait_for_ip_keeps_final_request_after_timeout(monkeypatch):
+    client = make_client(config={})
+    client._request = Mock(
+        return_value={
+            "error_code": 0,
+            "metadata": {
+                "status": "Stopped",
+                "network": {
+                    "eth0": {
+                        "addresses": [{"family": "inet", "scope": "global", "address": "10.0.0.5"}]
+                    }
+                },
+            },
+        }
+    )
+    time_mock = Mock()
+    time_mock.monotonic.side_effect = [0, 1]
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    result = incus_mod._wait_for_ip(client, "vm1", timeout=0)
+
+    assert result == ["10.0.0.5"]
+    client._request.assert_called_once_with("GET", "/instances/vm1/state")
+    time_mock.sleep.assert_not_called()
