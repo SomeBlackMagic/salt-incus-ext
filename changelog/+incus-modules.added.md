@@ -1,1 +1,4 @@
-Added execution modules for managing Incus instances, networks, storage pools, volumes, images, profiles, settings, and cluster members.
+Added Unix-socket/HTTPS Incus API client and execution modules for instances,
+snapshots, images and aliases, profiles, networks, ACLs, forwards, peers, DNS
+zones, storage pools, volumes and volume snapshots, server settings, trust
+entries, and cluster members.

@@ -414,7 +414,7 @@ def image_installed(
     This is a thin-wrapper over image_present, which allows convenient
     iteration over pillars. The state name becomes the primary alias.
 
-    .. code-block:: yaml
+    .. code-block:: jinja
 
         {% for img_name, img in pillar.get('incus_images', {}).items() %}
         {{ img_name }}:

@@ -11,19 +11,14 @@ This module provides functions to interact with Incus API for managing:
 
 Supports both local (Unix socket) and remote (HTTPS) connections.
 
-:configuration: Can be configured via pillar or minion config:
+Configuration is read from pillar or minion config:
+
+.. code-block:: yaml
 
     incus:
       connection:
-        type: unix  # or https
-        socket: /var/lib/incus/unix.socket  # for unix type
-        # For HTTPS type:
-        # url: https://incus.example.com:8443
-        # cert_storage:
-        #   type: local_files  # or sdb
-        #   cert: /path/to/client.crt
-        #   key: /path/to/client.key
-        #   verify: True  # or False or /path/to/ca.crt
+        type: unix
+        socket: /var/lib/incus/unix.socket
         polling:
           operation:
             backoff_enabled: true

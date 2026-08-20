@@ -1,5 +1,5 @@
-``incus``
-=========
+Settings Execution Module
+=========================
 
 .. automodule:: incus.modules.incus_settings_mod
     :members:

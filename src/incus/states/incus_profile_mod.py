@@ -45,7 +45,7 @@ def profile_present(name, config=None, devices=None, description=""):
     - And many other profile-specific parameters
 
     The state will:
-    1. Create the profile if it doesn't exist
+    1. Create the profile when it is absent
     2. Update existing profiles to match the specified configuration
     3. Track all changes in config, devices, and description
 

@@ -7,6 +7,18 @@
 
 ## Managing instances
 
+Import a remote image under a local alias before creating instances:
+
+```yaml
+ubuntu-24.04:
+  incus.image_present:
+    - source:
+        server: https://images.linuxcontainers.org
+        alias: ubuntu/24.04
+        protocol: simplestreams
+    - auto_update: true
+```
+
 ### Ensure a container exists
 
 ```yaml
@@ -14,13 +26,15 @@ mycontainer:
   incus.instance_present:
     - source:
         type: image
-        alias: images:ubuntu/22.04
+        alias: ubuntu-24.04
     - config:
         limits.cpu: "2"
         limits.memory: 2GiB
     - profiles:
         - default
     - instance_type: container
+    - require:
+        - incus: ubuntu-24.04
 ```
 
 ### Start/stop instances

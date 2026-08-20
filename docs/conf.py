@@ -63,8 +63,9 @@ if author is None:
 
 copyright = f"{copyright_year}, {author}"
 
-# The full version, including alpha/beta/rc tags
-release = dist.version
+# Keep the public version, including alpha/beta/rc tags, but omit local build
+# metadata such as an editable install's git hash.
+release = dist.version.split("+", 1)[0]
 
 
 # Variables to pass into the docs from sitevars.rst for rst substitution
