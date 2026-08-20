@@ -485,7 +485,7 @@ def test_wait_for_operation_polls_until_success(monkeypatch):
     )
     sleep = Mock()
     time_mock = Mock()
-    time_mock.time.return_value = 0
+    time_mock.monotonic.return_value = 0
     time_mock.sleep = sleep
     monkeypatch.setattr(incus_mod, "time", time_mock)
 
@@ -530,7 +530,7 @@ def test_wait_for_operation_returns_api_failure():
 
 def test_wait_for_operation_times_out(monkeypatch):
     time_mock = Mock()
-    time_mock.time.side_effect = [10, 311]
+    time_mock.monotonic.side_effect = [10, 311]
     monkeypatch.setattr(incus_mod, "time", time_mock)
     client = make_client()
     client._sync_request = Mock()
@@ -541,6 +541,104 @@ def test_wait_for_operation_times_out(monkeypatch):
         "success": False,
         "error": "Timeout waiting for operation to finish",
     }
+
+
+def test_wait_for_operation_uses_configured_backoff(monkeypatch):
+    client = make_client(
+        config={
+            "connection": {
+                "polling": {
+                    "operation": {
+                        "backoff_enabled": True,
+                        "initial_interval": 1,
+                        "backoff_factor": 1.5,
+                        "max_interval": 30,
+                        "jitter": 0,
+                    }
+                }
+            }
+        }
+    )
+    client._sync_request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 200}},
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.return_value = 0
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    client._wait_for_operation("/1.0/operations/operation-id")
+
+    assert time_mock.sleep.call_args_list == [call(1), call(1.5)]
+
+
+def test_wait_for_operation_explicit_options_override_config(monkeypatch):
+    client = make_client(
+        config={
+            "connection": {
+                "polling": {
+                    "operation": {
+                        "backoff_enabled": True,
+                        "initial_interval": 10,
+                        "backoff_factor": 3,
+                        "max_interval": 30,
+                        "jitter": 0,
+                    }
+                }
+            }
+        }
+    )
+    client._sync_request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 200}},
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.return_value = 0
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    client._wait_for_operation(
+        "/1.0/operations/operation-id",
+        initial_interval=2,
+        backoff_factor=2,
+        jitter=0,
+    )
+
+    assert time_mock.sleep.call_args_list == [call(2), call(4)]
+
+
+def test_wait_for_operation_rejects_both_interval_names():
+    client = make_client()
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client._wait_for_operation(
+            "/1.0/operations/operation-id",
+            interval=1,
+            initial_interval=2,
+        )
+
+
+def test_wait_for_operation_caps_sleep_at_timeout_and_polls_at_boundary(monkeypatch):
+    client = make_client()
+    client._sync_request = Mock(
+        side_effect=[
+            {"error_code": 0, "metadata": {"status_code": 103}},
+            {"error_code": 0, "metadata": {"status_code": 200}},
+        ]
+    )
+    time_mock = Mock()
+    time_mock.monotonic.side_effect = [0, 0, 0.75, 1]
+    monkeypatch.setattr(incus_mod, "time", time_mock)
+
+    result = client._wait_for_operation("/1.0/operations/operation-id", timeout=1)
+
+    assert result["metadata"]["status_code"] == 200
+    time_mock.sleep.assert_called_once_with(0.25)
 
 
 def test_wait_for_operation_returns_request_error():

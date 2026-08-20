@@ -24,6 +24,13 @@ Supports both local (Unix socket) and remote (HTTPS) connections.
         #   cert: /path/to/client.crt
         #   key: /path/to/client.key
         #   verify: True  # or False or /path/to/ca.crt
+        polling:
+          operation:
+            backoff_enabled: true
+            initial_interval: 1.0
+            backoff_factor: 1.5
+            max_interval: 30.0
+            jitter: 0.2
 
 :depends: requests
 """
@@ -36,6 +43,9 @@ import socket
 import tempfile
 import time
 from urllib.parse import urljoin
+
+from incus.utils import resolve_polling_settings
+from incus.utils import validate_timeout
 
 try:
     import requests
@@ -76,6 +86,22 @@ DEFAULT_CFG = {
             "cert": None,  # local path or sdb:// URI for type=sdb
             "key": None,  # local path or sdb:// URI for type=sdb
             "verify": True,  # bool/path or sdb:// URI for type=sdb
+        },
+        "polling": {
+            "operation": {
+                "backoff_enabled": False,
+                "initial_interval": 1.0,
+                "backoff_factor": 1.5,
+                "max_interval": 30.0,
+                "jitter": 0.2,
+            },
+            "ip": {
+                "backoff_enabled": False,
+                "initial_interval": 2.0,
+                "backoff_factor": 1.5,
+                "max_interval": 15.0,
+                "jitter": 0.2,
+            },
         },
     }
 }
@@ -441,13 +467,29 @@ class IncusClient:
                 "error_code": getattr(getattr(e, "response", None), "status_code", None),
             }
 
-    def _wait_for_operation(self, operation_url, timeout=300, interval=1):
+    def _wait_for_operation(
+        self,
+        operation_url,
+        timeout=300,
+        interval=None,
+        *,
+        initial_interval=None,
+        backoff_enabled=None,
+        backoff_factor=None,
+        max_interval=None,
+        jitter=None,
+    ):
         """
         Wait for an Incus async operation to finish.
 
         :param operation_url: e.g. "/1.0/operations/abc-123"
         :param timeout: maximum seconds to wait
-        :param interval: poll interval
+        :param interval: deprecated alias for initial_interval
+        :param initial_interval: first polling interval
+        :param backoff_enabled: whether to increase the interval after each poll
+        :param backoff_factor: exponential interval multiplier
+        :param max_interval: maximum interval before jitter
+        :param jitter: fractional random variation applied after the first interval
         :return: dict {
             "success": bool,
             "operation": <operation dict>,
@@ -462,7 +504,23 @@ class IncusClient:
           400 - Failure
         """
 
-        started = time.time()
+        defaults = DEFAULT_CFG["connection"]["polling"]["operation"]
+        connection = getattr(self, "config", {}).get("connection", {})
+        settings = connection.get("polling", {}).get("operation", {})
+        polling = resolve_polling_settings(
+            settings,
+            defaults,
+            interval=interval,
+            initial_interval=initial_interval,
+            backoff_enabled=backoff_enabled,
+            backoff_factor=backoff_factor,
+            max_interval=max_interval,
+            jitter=jitter,
+        )
+        validate_timeout(timeout)
+
+        deadline = time.monotonic() + timeout
+        attempt = 0
 
         # Operations must begin with /1.0/operations
         if not operation_url.startswith("/1.0/operations/"):
@@ -470,7 +528,7 @@ class IncusClient:
 
         while True:
             # Timeout
-            if time.time() - started > timeout:
+            if time.monotonic() > deadline:
                 return {"success": False, "error": "Timeout waiting for operation to finish"}
 
             # Query operation state
@@ -489,7 +547,10 @@ class IncusClient:
 
             # Running: 100, 101, 103
             if status_code in (100, 101, 103):
-                time.sleep(interval)
+                remaining = deadline - time.monotonic()
+                if remaining > 0:
+                    time.sleep(min(polling.delay(attempt), remaining))
+                attempt += 1
                 continue
 
             # Success

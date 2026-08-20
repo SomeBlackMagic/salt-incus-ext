@@ -13,6 +13,19 @@ and virtual machines) on a local or remote Incus server.
           connection:
             type: unix
             socket: /var/lib/incus/unix.socket
+            polling:
+              operation:
+                backoff_enabled: true
+                initial_interval: 1.0
+                backoff_factor: 1.5
+                max_interval: 30.0
+                jitter: 0.2
+              ip:
+                backoff_enabled: true
+                initial_interval: 2.0
+                backoff_factor: 1.5
+                max_interval: 15.0
+                jitter: 0.2
 
         # Remote HTTPS example:
         my-incus-remote:
@@ -41,6 +54,11 @@ and virtual machines) on a local or remote Incus server.
             limits.memory: 2GB
           devices: {}
           location: ""              # Optional: target cluster member
+          wait_for_ip_backoff_enabled: true
+          wait_for_ip_initial_interval: 2.0
+          wait_for_ip_backoff_factor: 1.5
+          wait_for_ip_max_interval: 15.0
+          wait_for_ip_jitter: 0.2
 
         incus-ubuntu-vm:
           provider: my-incus
@@ -81,6 +99,9 @@ from salt.exceptions import SaltCloudException
 from salt.exceptions import SaltCloudNotFound
 from salt.exceptions import SaltCloudSystemExit
 
+from incus.utils import resolve_polling_settings
+from incus.utils import validate_timeout
+
 log = logging.getLogger(__name__)
 
 __virtualname__ = "incus"
@@ -108,6 +129,22 @@ DEFAULT_CFG = {
             "cert": None,  # local path or inline PEM certificate
             "key": None,  # local path or inline PEM private key
             "verify": True,  # bool or local CA certificate path
+        },
+        "polling": {
+            "operation": {
+                "backoff_enabled": False,
+                "initial_interval": 1.0,
+                "backoff_factor": 1.5,
+                "max_interval": 30.0,
+                "jitter": 0.2,
+            },
+            "ip": {
+                "backoff_enabled": False,
+                "initial_interval": 2.0,
+                "backoff_factor": 1.5,
+                "max_interval": 15.0,
+                "jitter": 0.2,
+            },
         },
     }
 }
@@ -522,13 +559,29 @@ class IncusClient:
                 "error_code": getattr(getattr(e, "response", None), "status_code", None),
             }
 
-    def _wait_for_operation(self, operation_url, timeout=300, interval=1):
+    def _wait_for_operation(
+        self,
+        operation_url,
+        timeout=300,
+        interval=None,
+        *,
+        initial_interval=None,
+        backoff_enabled=None,
+        backoff_factor=None,
+        max_interval=None,
+        jitter=None,
+    ):
         """
         Wait for an Incus async operation to finish.
 
         :param operation_url: e.g. "/1.0/operations/abc-123"
         :param timeout: maximum seconds to wait
-        :param interval: poll interval in seconds
+        :param interval: deprecated alias for initial_interval
+        :param initial_interval: first polling interval
+        :param backoff_enabled: whether to increase the interval after each poll
+        :param backoff_factor: exponential interval multiplier
+        :param max_interval: maximum interval before jitter
+        :param jitter: fractional random variation applied after the first interval
         :return: operation result dict
 
         Incus operation status codes:
@@ -538,13 +591,29 @@ class IncusClient:
           200 - Success
           400 - Failure
         """
-        started = time.time()
+        defaults = DEFAULT_CFG["connection"]["polling"]["operation"]
+        connection = getattr(self, "config", {}).get("connection", {})
+        settings = connection.get("polling", {}).get("operation", {})
+        polling = resolve_polling_settings(
+            settings,
+            defaults,
+            interval=interval,
+            initial_interval=initial_interval,
+            backoff_enabled=backoff_enabled,
+            backoff_factor=backoff_factor,
+            max_interval=max_interval,
+            jitter=jitter,
+        )
+        validate_timeout(timeout)
+
+        deadline = time.monotonic() + timeout
+        attempt = 0
 
         if not operation_url.startswith("/1.0/operations/"):
             return {"success": False, "error": f"Invalid operation URL: {operation_url}"}
 
         while True:
-            if time.time() - started > timeout:
+            if time.monotonic() > deadline:
                 return {"success": False, "error": "Timeout waiting for operation to finish"}
 
             result = self._request("GET", operation_url.replace("/1.0/", "/"))
@@ -561,7 +630,10 @@ class IncusClient:
 
             # Running: 100, 101, 103
             if status_code in (100, 101, 103):
-                time.sleep(interval)
+                remaining = deadline - time.monotonic()
+                if remaining > 0:
+                    time.sleep(min(polling.delay(attempt), remaining))
+                attempt += 1
                 continue
 
             # Success
@@ -1085,9 +1157,9 @@ def create(vm_):
     log.info("Waiting for Incus instance '%s' to be running and have an IP", name)
 
     # Wait for instance to be running and have an IP address
-    timeout = vm_.get("wait_for_ip_timeout", 120)
-    interval = vm_.get("wait_for_ip_interval", 2)
-    private_ips = _wait_for_ip(client, name, timeout=timeout, interval=interval)
+    wait_kwargs = _wait_for_ip_kwargs(vm_)
+    timeout = wait_kwargs["timeout"]
+    private_ips = _wait_for_ip(client, name, **wait_kwargs)
 
     if not private_ips:
         log.warning(
@@ -1126,19 +1198,68 @@ def create(vm_):
     return node
 
 
-def _wait_for_ip(client, name, timeout=120, interval=2):
+def _wait_for_ip_kwargs(vm_):
+    """Translate cloud profile IP polling options to function arguments."""
+    wait_kwargs = {"timeout": vm_.get("wait_for_ip_timeout", 120)}
+    profile_options = {
+        "wait_for_ip_interval": "interval",
+        "wait_for_ip_initial_interval": "initial_interval",
+        "wait_for_ip_backoff_enabled": "backoff_enabled",
+        "wait_for_ip_backoff_factor": "backoff_factor",
+        "wait_for_ip_max_interval": "max_interval",
+        "wait_for_ip_jitter": "jitter",
+    }
+    for profile_option, argument in profile_options.items():
+        if profile_option in vm_:
+            wait_kwargs[argument] = vm_[profile_option]
+    return wait_kwargs
+
+
+def _wait_for_ip(
+    client,
+    name,
+    timeout=120,
+    interval=None,
+    *,
+    initial_interval=None,
+    backoff_enabled=None,
+    backoff_factor=None,
+    max_interval=None,
+    jitter=None,
+):
     """
     Poll instance state until it has a global IPv4 address or timeout is reached.
 
     :param client: IncusClient instance
     :param name: Instance name
     :param timeout: Maximum seconds to wait
-    :param interval: Poll interval in seconds
+    :param interval: Deprecated alias for initial_interval
+    :param initial_interval: First polling interval
+    :param backoff_enabled: Whether to increase the interval after each poll
+    :param backoff_factor: Exponential interval multiplier
+    :param max_interval: Maximum interval before jitter
+    :param jitter: Fractional random variation applied after the first interval
     :return: List of IP address strings (may be empty on timeout)
     """
-    started = time.time()
+    defaults = DEFAULT_CFG["connection"]["polling"]["ip"]
+    connection = getattr(client, "config", {}).get("connection", {})
+    settings = connection.get("polling", {}).get("ip", {})
+    polling = resolve_polling_settings(
+        settings,
+        defaults,
+        interval=interval,
+        initial_interval=initial_interval,
+        backoff_enabled=backoff_enabled,
+        backoff_factor=backoff_factor,
+        max_interval=max_interval,
+        jitter=jitter,
+    )
+    validate_timeout(timeout)
 
-    while time.time() - started < timeout:
+    deadline = time.monotonic() + timeout
+    attempt = 0
+
+    while time.monotonic() <= deadline:
         result = client._request("GET", f"/instances/{quote(name)}/state")
 
         if result.get("error_code") in (None, 0):
@@ -1150,7 +1271,10 @@ def _wait_for_ip(client, name, timeout=120, interval=2):
             if status == "Running" and ips:
                 return ips
 
-        time.sleep(interval)
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            time.sleep(min(polling.delay(attempt), remaining))
+        attempt += 1
 
     # Final attempt — return whatever IPs we can find even without running status
     result = client._request("GET", f"/instances/{quote(name)}/state")
