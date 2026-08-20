@@ -251,7 +251,7 @@ def instance_snapshots_managed(  # pylint: disable=unused-argument
     rotates old snapshots based on retention policies. It supports:
     - Creating multiple snapshots with different configurations
     - Automatic snapshot rotation based on keep count
-    - Pattern-based snapshot management (e.g., daily-*, weekly-*)
+    - Pattern-based snapshot management (e.g., ``daily-*``, ``weekly-*``)
     - Expiry date management
 
     :param instance: Instance name
@@ -263,7 +263,7 @@ def instance_snapshots_managed(  # pylint: disable=unused-argument
     - stateful: Whether to create stateful snapshot (default: False)
     - description: Snapshot description
     - keep: Number of snapshots to keep for this pattern (rotation)
-    - pattern: Name pattern for rotation (e.g., "daily-*")
+    - pattern: Name pattern for rotation (e.g., ``daily-*``)
     - expires_at: Expiry date in ISO format
 
     Example:
@@ -429,7 +429,7 @@ def instance_snapshots_rotated(  # pylint: disable=unused-argument
     keeping only the specified number of the most recent ones.
 
     :param instance: Instance name
-    :param pattern: Snapshot name pattern (supports wildcards like "daily-*")
+    :param pattern: Snapshot name pattern (supports wildcards like ``daily-*``)
     :param keep: Number of snapshots to keep
     :param name: Salt state ID (automatically supplied by Salt)
 
