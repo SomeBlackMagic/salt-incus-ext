@@ -1,0 +1,61 @@
+name: someblackmagic/incus-ext
+version: 0.1.0
+description: Salt Extension for interacting with Incus containers and virtual machines
+
+# --- Salt compatibility ---
+minimum_version: "3006"
+maximum_version: ~
+
+python_requires: []
+
+dependencies: []
+
+
+conflicts: []
+
+maintainers:
+  - name: SomeBlackMagic
+    email: dev@someblackmagic.com
+    github: SomeBlackMagic
+
+
+authors:
+  - name: Andru Cherny
+
+license: Apache-2.0
+
+website: https://github.com/SomeBlackMagic/salt-incus-ext
+source: https://github.com/SomeBlackMagic/salt-incus-ext
+issues: https://github.com/SomeBlackMagic/salt-incus-ext/issues
+
+summary: |
+  Provides custom Salt modules for managing Incus:
+
+  Execution modules:
+    - incus_mod            — core Incus operations
+    - incus_instance_mod   — instance lifecycle management
+    - incus_network_mod    — network configuration
+    - incus_storage_pool_mod — storage pool management
+    - incus_volume_mod     — volume management
+    - incus_profile_mod    — profile management
+    - incus_trust_mod      — trust/certificate management
+    - incus_cluster_mod    — cluster operations
+    - incus_image_mod      — image management
+    - incus_pki_mod        — PKI/certificate generation
+    - incus_settings_mod   — Incus server settings
+
+  State modules:
+    - incus_instance_mod          — instance state management
+    - incus_instance_snapshot_mod — instance snapshot management
+    - incus_network_mod           — network state management
+    - incus_storage_pool_mod      — storage pool state management
+    - incus_volume_mod            — volume state management
+    - incus_profile_mod           — profile state management
+    - incus_trust_mod             — trust state management
+    - incus_cluster_mod           — cluster state management
+    - incus_image_mod             — image state management
+    - incus_pki_mod               — PKI state management
+    - incus_settings_mod          — settings state management
+
+  Cloud modules:
+    - incus_mod — Incus cloud driver for Salt Cloud
