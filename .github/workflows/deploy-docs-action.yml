@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       # This is the name of the regular artifact that should
-      # be transformed into a GitHub Pages deployment.
+      # be published to the gh-pages branch.
       artifact-name:
         type: string
         required: false
@@ -14,8 +14,7 @@ on:
 
 permissions:
   actions: read  # For downloading artifacts of other runs when called via workflow_run trigger
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
 
@@ -25,17 +24,17 @@ jobs:
   #   * Rebuilding docs for all versions when a new release is made
   #   * Version selector support in `furo`: https://github.com/pradyunsg/furo/pull/500
   #
-  # or (more basic):
-  #   * using the `gh-pages` branch and peaceiris/actions-gh-pages
-  #     to be able to deploy to subdirectories. The implementation via
-  #     actions/deploy-pages always replaces the directory root.
+  # The generated documentation replaces the root of the gh-pages branch.
+  # Content managed separately under /repo is preserved during the sync.
 
   Deploy-Docs-GH-Pages:
-    name: Publish Docs to GitHub Pages
+    name: Publish Docs to gh-pages
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    # A branch push cannot be concurrent: one deployment must finish before
+    # another one snapshots and updates the branch.
+    concurrency:
+      group: gh-pages-publication
+      cancel-in-progress: false
 
     runs-on: ubuntu-24.04
 
@@ -49,26 +48,35 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.run_id }}
 
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
-          name: html-docs-pages
-          path: html-docs
+          fetch-depth: 0
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5.0.0
-        with:
-          artifact_name: html-docs-pages
+      - name: Check out gh-pages
+        env:
+          GH_PAGES_BRANCH: gh-pages
+        run: |
+          if git ls-remote --exit-code --heads origin "$GH_PAGES_BRANCH"; then
+            git fetch origin "$GH_PAGES_BRANCH"
+            git worktree add --detach gh-pages "origin/$GH_PAGES_BRANCH"
+          else
+            mkdir gh-pages
+            git -C gh-pages init
+            git -C gh-pages checkout --orphan "$GH_PAGES_BRANCH"
+            git -C gh-pages remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
 
-      - name: Delete GitHub Pages artifact
-        if: always()
-        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118  # v6.0.0
-        with:
-          name: html-docs-pages
-          failOnError: false
-
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - name: Update gh-pages
+        env:
+          GH_PAGES_BRANCH: gh-pages
+        run: |
+          rsync -a --delete --exclude='/.git/' --exclude='/repo/' html-docs/ gh-pages/
+          git -C gh-pages config user.name "github-actions[bot]"
+          git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C gh-pages add --all
+          git -C gh-pages diff --cached --quiet || git -C gh-pages commit -m "Update documentation"
+          git -C gh-pages push origin "HEAD:refs/heads/$GH_PAGES_BRANCH"
 
       - name: Upload Exit Status
         if: always()

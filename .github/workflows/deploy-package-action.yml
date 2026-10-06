@@ -127,6 +127,8 @@ jobs:
       - name: Publish via salt-bundle
         uses: SomeBlackMagic/salt-bundle/.github/actions/salt-bundle-release@master
         with:
+          index-branch: gh-pages
+          index-dir: repo
           packages-dir: "."
           version: ${{ needs.get_version.outputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -139,8 +141,7 @@ jobs:
       - get_version
     permissions:
       actions: read
-      pages: write
-      id-token: write
+      contents: write
 
   gh_release:
     name: Create GitHub release
