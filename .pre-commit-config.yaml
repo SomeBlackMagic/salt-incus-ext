@@ -35,6 +35,13 @@ repos:
         language: python
         pass_filenames: false
 
+      - id: check-docs-toctree
+        name: Check all docs are included in toctree
+        entry: python .pre-commit-hooks/check-docs-toctree.py
+        language: python
+        pass_filenames: false
+        files: ^docs/
+
   - repo: https://github.com/saltstack/salt-rewrite
     # Automatically rewrite code with known rules
     rev: 2401c0faef69b6b846c719d611bcfe358234d5d1  # 2.5.2
