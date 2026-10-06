@@ -28,7 +28,6 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --event pull_request \
             --branch release/auto \
-            --workflow 'Auto PR Releases' \
             --json status \
             --jq 'map(select(.status == ("queued","in_progress"))) | length')"
           echo "count=$count" >> "$GITHUB_OUTPUT"
