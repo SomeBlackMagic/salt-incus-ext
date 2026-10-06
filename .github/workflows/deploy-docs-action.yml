@@ -59,7 +59,9 @@ jobs:
         run: |
           if git ls-remote --exit-code --heads origin "$GH_PAGES_BRANCH"; then
             git fetch origin "$GH_PAGES_BRANCH"
-            git worktree add --detach gh-pages "origin/$GH_PAGES_BRANCH"
+            # FETCH_HEAD is the exact remote branch tip fetched above. Do not
+            # rely on a possibly stale origin/gh-pages tracking ref.
+            git worktree add --detach gh-pages FETCH_HEAD
           else
             mkdir gh-pages
             git -C gh-pages init
