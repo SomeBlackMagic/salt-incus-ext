@@ -49,7 +49,6 @@ client, and the Incus API fit together.
   :hidden:
 
   changelog
-  Development
 
 Module overview
 ===============
