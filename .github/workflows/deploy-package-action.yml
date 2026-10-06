@@ -9,6 +9,9 @@ on:
       - Auto PR Releases
       - Tagged Releases
 
+env:
+  RELEASE_PYPI: false
+
 jobs:
   get_version:
     name: Get package version
