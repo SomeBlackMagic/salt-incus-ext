@@ -17,6 +17,29 @@ DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
 DOC_EXTENSIONS = {".rst", ".md"}
 TOCTREE_RE = re.compile(r"^\.\.\s+toctree::", re.MULTILINE)
 EXCLUDED_NAMES = {"index", "sitevars"}
+RST_TITLE_UNDERLINE = re.compile(r"^[=\-~^\"#*+`.]{3,}$")
+
+
+def _has_title(path: Path) -> bool:
+    """Check whether a document has a top-level title."""
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        return False
+    if path.suffix == ".md":
+        # Markdown: first non-empty line must start with #
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped:
+                return stripped.startswith("#")
+        return False
+    # reStructuredText: title is a line followed (or preceded) by an underline
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if RST_TITLE_UNDERLINE.match(line.strip()):
+            # Overline+title+underline or title+underline
+            if i > 0 and lines[i - 1].strip():
+                return True
+    return False
 
 
 def collect_toctree_entries(rst_file: Path) -> set[str]:
@@ -77,9 +100,19 @@ def main() -> int:
         for name in missing:
             print(f"  - docs/{top_level_docs[name].name}")
         print("\nAdd them to a toctree directive in docs/index.rst.")
-        return 1
+        errors = True
+    else:
+        errors = False
 
-    return 0
+    # Check that every referenced top-level doc has a title.
+    for name in sorted(referenced & set(top_level_docs)):
+        path = top_level_docs[name]
+        if not _has_title(path):
+            print(f"Document has no title: docs/{path.name}")
+            print("  Sphinx requires a top-level heading to generate toctree links.")
+            errors = True
+
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

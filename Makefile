@@ -88,6 +88,11 @@ fmt: ## Auto-fix formatting (black, isort, pyupgrade, trailing whitespace, etc.)
 lint: ## Run all pre-commit checks (formatting + linting + security)
 	@pre-commit run --all-files
 
+## Verification
+
+.PHONY: check
+check: lint docs tests ## Run all checks: lint + docs + tests (same as CI)
+
 ## Tests
 
 .PHONY: tests

@@ -12,3 +12,6 @@ See the **Contributing** section in the [README][README.md] for a quickstart.
 
 [README.md]: README.md
 [salt-contributing]: https://docs.saltproject.io/en/master/topics/development/contributing.html
+
+
+incus monitor --pretty --type=logging --loglevel=debug
