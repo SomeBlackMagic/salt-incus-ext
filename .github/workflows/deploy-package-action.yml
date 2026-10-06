@@ -146,3 +146,21 @@ jobs:
               --title="${GITHUB_REPOSITORY#*/} $VERSION" \
               --generate-notes \
               dist/*
+
+  salt_bundle_release:
+    name: Publish to Salt Bundle
+    runs-on: ubuntu-24.04
+    needs:
+      - gh_release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish via salt-bundle
+        uses: SomeBlackMagic/salt-bundle/.github/actions/salt-bundle-release@master
+        with:
+          packages-dir: "."
+          token: ${{ secrets.GITHUB_TOKEN }}
