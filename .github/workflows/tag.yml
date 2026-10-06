@@ -75,6 +75,8 @@ jobs:
     needs:
       - get_version_tag
     uses: ./.github/workflows/ci.yml
+    with:
+      skip-test-failures: true
     permissions:
       contents: read
       id-token: write

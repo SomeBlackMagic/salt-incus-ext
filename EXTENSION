@@ -1,5 +1,5 @@
 name: someblackmagic/incus-ext
-version: 0.1.0
+version: 1.0.0
 description: Salt Extension for interacting with Incus containers and virtual machines
 
 # --- Salt compatibility ---
