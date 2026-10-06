@@ -55,6 +55,7 @@ jobs:
   test_release:
     name: Publish Python Package to Test PyPI
     runs-on: ubuntu-24.04
+    if: vars.RELEASE_PYPI != 'false'
     needs:
       - get_version
     permissions:
@@ -81,6 +82,7 @@ jobs:
   pypi_release:
     name: Publish Python Package to PyPI
     runs-on: ubuntu-24.04
+    if: vars.RELEASE_PYPI != 'false'
     needs:
       - test_release
     permissions:
@@ -105,6 +107,26 @@ jobs:
           attestations: ${{ secrets.PYPI_API_TOKEN == '' }}
           password: ${{ secrets.PYPI_API_TOKEN }}
           verbose: ${{ runner.debug == '1' }}
+
+  salt_bundle_release:
+    name: Publish to Salt Bundle
+    runs-on: ubuntu-24.04
+    if: vars.RELEASE_SALT_BUNDLE != 'false'
+    needs:
+      - get_version
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish via salt-bundle
+        uses: SomeBlackMagic/salt-bundle/.github/actions/salt-bundle-release@master
+        with:
+          packages-dir: "."
+          version: ${{ needs.get_version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   docs_release:
     name: Deploy Docs
@@ -146,21 +168,3 @@ jobs:
               --title="${GITHUB_REPOSITORY#*/} $VERSION" \
               --generate-notes \
               dist/*
-
-  salt_bundle_release:
-    name: Publish to Salt Bundle
-    runs-on: ubuntu-24.04
-    needs:
-      - gh_release
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Publish via salt-bundle
-        uses: SomeBlackMagic/salt-bundle/.github/actions/salt-bundle-release@master
-        with:
-          packages-dir: "."
-          token: ${{ secrets.GITHUB_TOKEN }}
