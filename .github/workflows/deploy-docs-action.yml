@@ -78,6 +78,10 @@ jobs:
           git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C gh-pages add --all
           git -C gh-pages diff --cached --quiet || git -C gh-pages commit -m "Update documentation"
+          # Rebase onto changes made after the initial checkout, such as an
+          # independent update of /repo. This keeps the push fast-forward.
+          git -C gh-pages fetch origin "$GH_PAGES_BRANCH"
+          git -C gh-pages rebase FETCH_HEAD
           git -C gh-pages push origin "HEAD:refs/heads/$GH_PAGES_BRANCH"
 
       - name: Upload Exit Status
