@@ -52,8 +52,7 @@ jobs:
     uses: ./.github/workflows/deploy-docs-action.yml
     permissions:
       actions: read
-      pages: write
-      id-token: write
+      contents: write
 
   check-prepare-release:
     name: Check if we can prepare release PR
