@@ -9,6 +9,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "src/incus/version.py"
 write_to_template = "__version__ = \"{version}\"\n"
+tag_regex = "^(?:someblackmagic/incus-ext-|[vV])?(?P<version>\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
 
 [project]
 name = "incus"
