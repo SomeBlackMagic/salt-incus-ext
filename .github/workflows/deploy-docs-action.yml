@@ -40,11 +40,6 @@ jobs:
 
     steps:
 
-      - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          fetch-depth: 0
-
       - name: Download built docs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -54,36 +49,35 @@ jobs:
           run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.run_id }}
 
       - name: Check out gh-pages
-        env:
-          GH_PAGES_BRANCH: gh-pages
-        run: |
-          if git ls-remote --exit-code --heads origin "$GH_PAGES_BRANCH"; then
-            git fetch origin "$GH_PAGES_BRANCH"
-            # FETCH_HEAD is the exact remote branch tip fetched above. Do not
-            # rely on a possibly stale origin/gh-pages tracking ref.
-            git worktree add --detach gh-pages FETCH_HEAD
-          else
-            mkdir gh-pages
-            git -C gh-pages init
-            git -C gh-pages checkout --orphan "$GH_PAGES_BRANCH"
-            git -C gh-pages remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          fi
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          ref: gh-pages
+          path: gh-pages
 
       - name: Update gh-pages
-        env:
-          GH_PAGES_BRANCH: gh-pages
         run: |
           rsync -a --delete --exclude='/.git/' --exclude='/repo/' html-docs/ gh-pages/
           git -C gh-pages config user.name "github-actions[bot]"
           git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C gh-pages add --all
-          git -C gh-pages diff --cached --quiet || git -C gh-pages commit -m "Update documentation"
-          # Rebase onto changes made after the initial checkout, such as an
-          # independent update of /repo. This keeps the push fast-forward.
-          git -C gh-pages fetch origin "$GH_PAGES_BRANCH"
-          git -C gh-pages rebase FETCH_HEAD
-          git -C gh-pages push origin "HEAD:refs/heads/$GH_PAGES_BRANCH"
+          if ! git -C gh-pages diff --cached --quiet; then
+            git -C gh-pages commit -m "Update documentation"
+            git -C gh-pages push origin HEAD:gh-pages
+          fi
+
+      - name: Save Exit Status
+        if: always()
+        env:
+          OUTFILE: exitstatus/${{ github.job }}
+          STATUS: ${{ job.status }}
+        run: |
+          mkdir exitstatus
+          echo "$STATUS" > "$OUTFILE"
 
       - name: Upload Exit Status
         if: always()
-        uses: ./.github/actions/upload-exitstatus
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.1
+        with:
+          name: exitstatus-${{ github.job }}
+          path: exitstatus
+          if-no-files-found: error
