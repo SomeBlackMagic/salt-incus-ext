@@ -4,6 +4,24 @@ This project uses [Semantic Versioning](https://semver.org/) - MAJOR.MINOR.PATCH
 
 # Changelog
 
+## 1.0.1 (2026-10-07)
+
+
+### Changed
+
+- Updated GitHub Actions workflows to publish documentation directly to the
+  `gh-pages` branch, preserve its package index, and prevent Jekyll from
+  excluding Sphinx assets.
+- Updated the Salt Bundle release workflow to publish its package index in the
+  `repo` directory on the `gh-pages` branch.
+- Allowed Linux and Incus integration test jobs to report failures without
+  blocking CI while they are being stabilized; Windows and macOS test jobs are
+  temporarily disabled.
+- Configured version discovery to recognize both `v*` and
+  `someblackmagic/incus-ext-*` release tags.
+- Simplified the release-workflow status check and expanded files excluded from
+  the Salt extension bundle.
+
 ## 1.0.0 (2026-10-06)
 
 
