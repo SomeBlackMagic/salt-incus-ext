@@ -293,14 +293,34 @@
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <p>The changelog format is based on <a class="reference external" href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>.</p>
 <p>This project uses <a class="reference external" href="https://semver.org/">Semantic Versioning</a> - MAJOR.MINOR.PATCH</p>
+<section id="dev4-2026-10-07">
+<h2>1.0.1.dev4 (2026-10-07)<a class="headerlink" href="#dev4-2026-10-07" title="Link to this heading">¶</a></h2>
+<p>No significant changes.</p>
+</section>
 <section id="id1">
 <h2>1.0.1 (2026-10-07)<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
-<p>No significant changes.</p>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Updated GitHub Actions workflows to publish documentation directly to the
+<code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch, preserve its package index, and prevent Jekyll from
+excluding Sphinx assets.</p></li>
+<li><p>Updated the Salt Bundle release workflow to publish its package index in the
+<code class="docutils literal notranslate"><span class="pre">repo</span></code> directory on the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch.</p></li>
+<li><p>Allowed Linux and Incus integration test jobs to report failures without
+blocking CI while they are being stabilized; Windows and macOS test jobs are
+temporarily disabled.</p></li>
+<li><p>Configured version discovery to recognize both <code class="docutils literal notranslate"><span class="pre">v*</span></code> and
+<code class="docutils literal notranslate"><span class="pre">someblackmagic/incus-ext-*</span></code> release tags.</p></li>
+<li><p>Simplified the release-workflow status check and expanded files excluded from
+the Salt extension bundle.</p></li>
+</ul>
+</section>
 </section>
 <section id="id2">
 <h2>1.0.0 (2026-10-06)<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3>Changed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Added optional, configurable exponential backoff with jitter to operation and IP
 polling loops while preserving the existing fixed polling behavior by default.</p></li>
@@ -388,9 +408,13 @@ idempotent updates and Salt test-mode support.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Changelog</a><ul>
-<li><a class="reference internal" href="#id1">1.0.1 (2026-10-07)</a></li>
-<li><a class="reference internal" href="#id2">1.0.0 (2026-10-06)</a><ul>
+<li><a class="reference internal" href="#dev4-2026-10-07">1.0.1.dev4 (2026-10-07)</a></li>
+<li><a class="reference internal" href="#id1">1.0.1 (2026-10-07)</a><ul>
 <li><a class="reference internal" href="#changed">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">1.0.0 (2026-10-06)</a><ul>
+<li><a class="reference internal" href="#id3">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 <li><a class="reference internal" href="#added">Added</a></li>
 </ul>
@@ -406,7 +430,7 @@ idempotent updates and Salt test-mode support.</p></li>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=292eb321"></script>
+</div><script src="_static/documentation_options.js?v=03b83a3c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
