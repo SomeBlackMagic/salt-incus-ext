@@ -1,0 +1,17 @@
+apiVersion: v1
+generated: 2026-10-07 08:20:59.950414
+packages:
+  someblackmagic/incus-ext:
+  - version: 1.0.0
+    url: https://github.com/SomeBlackMagic/salt-incus-ext/releases/download/someblackmagic/incus-ext-1.0.0/someblackmagic--incus-ext-1.0.0.tgz
+    digest: sha256:febb474309cb01f700757b6b0aa59f2450ac59b2172e503fa3f6890a2883fae6
+    created: 2026-10-07 08:20:59.950326
+    keywords: []
+    maintainers:
+    - name: SomeBlackMagic
+      email: dev@someblackmagic.com
+      github: SomeBlackMagic
+    sources:
+    - https://github.com/SomeBlackMagic/salt-incus-ext
+    dependencies: []
+    type: extension
